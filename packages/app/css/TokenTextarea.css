@@ -1,0 +1,55 @@
+.token-textarea {
+  display: grid;
+  grid-template-rows: 100%;
+  grid-template-columns: 100%;
+  font-size: 1.3rem;
+  line-height: 2.5;
+}
+
+.token-textarea > * {
+  padding: 1.2rem;
+  grid-row: 1;
+  grid-column: 1;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
+.token-textarea textarea {
+  border: none;
+  outline: none;
+  resize: none;
+  font: inherit;
+}
+
+.token-textarea .tokens {
+  color: transparent;
+  pointer-events: none;
+  user-select: none;
+}
+
+.token-textarea .character {
+  position: relative;
+}
+
+.token-textarea .character a {
+  position: absolute;
+  top: calc(100% + 0.1em);
+  left: 0;
+  right: 0;
+  height: 0.2em;
+  pointer-events: all;
+  transition: background-color 0.2s;
+}
+
+.token-textarea:hover .character a,
+.token-textarea textarea:focus + .tokens .character a {
+  background-color: #ccc;
+}
+
+.token-textarea .character:first-child a {
+  left: 0.1em;
+}
+
+.token-textarea .character:last-child a {
+  right: 0.1em;
+}

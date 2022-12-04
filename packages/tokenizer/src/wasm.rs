@@ -1,7 +1,7 @@
 use js_sys::{Array, Object};
 use wasm_bindgen::prelude::wasm_bindgen;
 
-use crate::tokenize;
+use crate::{tokenize, cedict::CEDICT_DATA};
 
 #[wasm_bindgen(module = "/js/util.js")]
 extern "C" {
@@ -54,4 +54,9 @@ pub fn _tokenize(input: &str) -> Array {
       )
     })
     .collect()
+}
+
+#[wasm_bindgen(start)]
+pub fn _main() {
+  let _ = &*CEDICT_DATA;
 }

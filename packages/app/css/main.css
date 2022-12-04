@@ -1,8 +1,37 @@
+@import url("./TokenTextarea.css");
+
 * {
   margin: 0;
   padding: 0;
 }
 
 body {
-  font: 120%/1.5 "Inter", sans-serif;
+  font: 100%/1.5 "Inter", sans-serif;
+}
+
+#root {
+  display: grid;
+  grid-template-rows: 100%;
+  grid-template-columns: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.app {
+  display: grid;
+  grid-template-rows: 50% 50%;
+  grid-template-columns: 100%;
+}
+
+.app .input {
+  display: grid;
+  grid-template-rows: 100%;
+  grid-template-columns: 100%;
+}
+
+.app .info {
+  background-color: #ddd;
 }
