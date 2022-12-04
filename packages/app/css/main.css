@@ -2,3 +2,7 @@
   margin: 0;
   padding: 0;
 }
+
+body {
+  font: 120%/1.5 "Inter", sans-serif;
+}
