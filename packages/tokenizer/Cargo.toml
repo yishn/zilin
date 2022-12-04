@@ -3,9 +3,13 @@ name = "chinese-tokenizer"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+js-sys = "0.3.60"
 lazy-regex = "2.3.1"
 niffler = { version = "2.4.0", default-features = false, features = ["gz"] }
 once_cell = "1.16.0"

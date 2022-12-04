@@ -1,5 +1,6 @@
 mod cedict;
 mod trie;
+mod wasm;
 
 use cedict::{CedictEntry, CEDICT_DATA};
 

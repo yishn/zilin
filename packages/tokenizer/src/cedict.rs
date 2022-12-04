@@ -28,12 +28,14 @@ impl Cedict {
     let mut result = Self::default();
 
     for line in data {
-      if line.trim().is_empty() || line.trim().starts_with("#") {
+      let line = line.trim();
+
+      if line.is_empty() || line.starts_with("#") {
         continue;
       }
 
       let captures =
-        regex_captures!(r#"^(\S+)\s(\S+)\s\[([^\]]+)\]\s/(.+)/"#, &line);
+        regex_captures!(r#"^(\S+)\s(\S+)\s\[([^\]]+)\]\s/(.+)/"#, line);
 
       if let Some((_, traditional, simplified, pinyin, english)) = captures {
         let entry = CedictEntry {
@@ -103,7 +105,9 @@ mod tests {
 
   #[test]
   fn can_get_all_words_with_prefix() {
-    let data = CEDICT_DATA.get_simplified_prefix("中国").collect::<Vec<_>>();
+    let data = CEDICT_DATA
+      .get_simplified_prefix("中国")
+      .collect::<Vec<_>>();
 
     assert!(data.len() > 2);
   }
