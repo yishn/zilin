@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "lib": [
+      "esnext",
+      "dom",
+      "dom.iterable"
+    ]
+  },
+  "importMap": "./import_map.json",
+  "tasks": {
+    "build": "wasm-pack build --target web ./packages/tokenizer && deno bundle ./packages/app/src/main.ts ./packages/app/dist/main.js"
+  }
+}
