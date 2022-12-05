@@ -7,6 +7,7 @@
 }
 
 .token-textarea > * {
+  position: relative;
   padding: 1.2rem;
   grid-row: 1;
   grid-column: 1;
@@ -26,11 +27,11 @@
   color: transparent;
   pointer-events: none;
   user-select: none;
+  visibility: hidden;
 }
 
-.token-textarea .token,
-.token-textarea .character {
-  position: relative;
+.token-textarea .overlay {
+  pointer-events: none;
 }
 
 .token-textarea .character a {
@@ -48,7 +49,7 @@
 }
 
 .token-textarea:hover .character a,
-.token-textarea textarea:focus + .tokens .character a {
+.token-textarea textarea:focus + .overlay .character a {
   background-color: rgba(var(--highlight-color), 0.2);
 }
 
@@ -75,19 +76,19 @@
 }
 
 .token-textarea .character.highlight a,
-.token-textarea textarea:focus + .tokens .character.highlight a {
+.token-textarea textarea:focus + .overlay .character.highlight a {
   background-color: rgb(var(--highlight-color));
 }
 
-.token-textarea .token:not(.highlight) .character:first-child a {
+.token-textarea .character:first-child:not(.highlight) a {
   left: 0.1em;
 }
 
-.token-textarea .token:not(.highlight) .character:last-child a {
+.token-textarea .character:last-child:not(.highlight) a {
   right: 0.1em;
 }
 
-.token-textarea .token .pronunciation {
+.token-textarea .word .pronunciation {
   position: absolute;
   top: 0;
   left: 50%;

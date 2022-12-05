@@ -28,15 +28,20 @@ export const App: React.FunctionalComponent = () => {
       <TokenTextarea
         value={input}
         loading={!tokenizerLoaded.fulfilled}
-        tokens={tokens?.map((token) => ({
-          value: token.value,
-          pronunciation: () =>
-            [...new Set(token.entries.map((entry) => entry.pinyin))]
-              .sort()
-              .map((x) => prettifyPinyin(x))
-              .join("/"),
-          unselectable: token.value.trim() === "" || token.entries.length === 0,
-        }))}
+        tokens={useMemo(
+          () =>
+            tokens?.map((token) => ({
+              value: token.value,
+              pronunciation: () =>
+                [...new Set(token.entries.map((entry) => entry.pinyin))]
+                  .sort()
+                  .map((pinyin) => prettifyPinyin(pinyin))
+                  .join("/"),
+              unselectable:
+                token.value.trim() === "" || token.entries.length === 0,
+            })),
+          [tokens]
+        )}
         highlight={highlight}
         onInput={(evt) => setInput(evt.currentTarget.value)}
         onTokenClick={(evt) => {
