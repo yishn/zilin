@@ -2,7 +2,7 @@ use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::{
   cedict::{CedictEntry, CEDICT_DATA},
-  lookup_simplified, tokenize, lookup_traditional,
+  lookup_simplified, lookup_traditional, tokenize,
 };
 
 #[wasm_bindgen(typescript_custom_section)]

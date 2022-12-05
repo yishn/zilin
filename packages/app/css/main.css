@@ -1,5 +1,6 @@
 @import url("./App.css");
 @import url("./TokenTextarea.css");
+@import url("./ModeSwitcher.css");
 @import url("./DictionaryPane.css");
 
 * {
@@ -11,7 +12,9 @@
 html {
   --text-color: 51, 35, 49;
   --highlight-color: 155, 55, 120;
+  --highlight-color-alt: 189, 224, 114;
   --dark-background-color: 22, 15, 22;
+  --dark-background-color-lighter: 46, 31, 41;
   --light-text-color: 250, 255, 239;
   --light-link-text-color: 244, 157, 247;
   --color-accent-1: 79, 54, 76;

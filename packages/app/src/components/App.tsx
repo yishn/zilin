@@ -10,6 +10,7 @@ import init, {
 import { useAsync } from "../hooks/useAsync.ts";
 import { TokenTextarea, Token } from "./TokenTextarea.tsx";
 import { DictionaryPane } from "./DictionaryPane.tsx";
+import { ModeSwitcher, ModeValue } from "./ModeSwitcher.tsx";
 
 function prettifyPinyin(pinyin: string): string {
   return pp(pinyin.replaceAll("u:", "ü"));
@@ -20,6 +21,7 @@ export const App: React.FunctionalComponent = () => {
     await init("./packages/tokenizer/pkg/chinese_tokenizer_bg.wasm");
   }, []);
 
+  const [mode, setMode] = useState<ModeValue>("simplified");
   const [input, setInput] = useState("");
   const [highlight, setHighlight] = useState<string>();
 
@@ -43,13 +45,16 @@ export const App: React.FunctionalComponent = () => {
     [tokens]
   );
 
+  const lookup = (word: string, mode: ModeValue) =>
+    mode === "simplified" ? lookupSimplified(word) : lookupTraditional(word);
+
   const dictionaryEntries = useMemo(() => {
     if (highlight != null && tokenizerLoaded.fulfilled) {
-      const entries = lookupSimplified(highlight);
-
-      return entries.length > 0 ? entries : lookupTraditional(highlight);
+      return lookup(highlight, mode);
     }
-  }, [tokenizerLoaded.fulfilled, highlight]);
+
+    return [];
+  }, [mode, tokenizerLoaded.fulfilled, highlight]);
 
   const wordVariants = useMemo(() => {
     const set = new Set(
@@ -63,6 +68,23 @@ export const App: React.FunctionalComponent = () => {
 
     return [...set].sort();
   }, [dictionaryEntries, highlight]);
+
+  useEffect(
+    function switchMode() {
+      if (
+        tokenizerLoaded.fulfilled &&
+        highlight != null &&
+        dictionaryEntries.length === 0
+      ) {
+        const otherMode = mode === "simplified" ? "traditional" : "simplified";
+
+        if (lookup(highlight, otherMode).length > 0) {
+          setMode(otherMode);
+        }
+      }
+    },
+    [tokenizerLoaded.fulfilled, dictionaryEntries]
+  );
 
   useEffect(function handleHistory() {
     const handlePopState = (evt?: PopStateEvent) => {
@@ -90,22 +112,40 @@ export const App: React.FunctionalComponent = () => {
         onInput={(evt) => setInput(evt.currentTarget.value)}
       />
 
-      <DictionaryPane
-        word={highlight}
-        variants={wordVariants}
-        meanings={dictionaryEntries?.map((entry) => ({
-          pinyin: prettifyPinyin(entry.pinyin),
-          explanation: entry.english
-            .replaceAll("/", " / ")
-            .replaceAll("|", " | ")
-            .replaceAll(",", ", ")
-            .replaceAll(":", ": ")
-            .replace(
-              /\[([^\]]*)\]/g,
-              (_, pinyin) => ` [${prettifyPinyin(pinyin)}]`
-            ),
-        }))}
-      />
+      <aside>
+        <ModeSwitcher
+          mode={mode}
+          onChange={(evt) => {
+            const needHighlightChange = !dictionaryEntries.some(
+              (entry) => entry[evt.mode] === highlight
+            );
+
+            if (needHighlightChange) {
+              const newHighlight = dictionaryEntries[0]?.[evt.mode];
+              globalThis.location.href = "#" + newHighlight;
+            }
+
+            setMode(evt.mode);
+          }}
+        />
+
+        <DictionaryPane
+          word={dictionaryEntries.length > 0 ? highlight : undefined}
+          variants={wordVariants}
+          meanings={dictionaryEntries.map((entry) => ({
+            pinyin: prettifyPinyin(entry.pinyin),
+            explanation: entry.english
+              .replaceAll("/", " / ")
+              .replaceAll("|", " | ")
+              .replaceAll(",", ", ")
+              .replaceAll(":", ": ")
+              .replace(
+                /\[([^\]]*)\]/g,
+                (_, pinyin) => ` [${prettifyPinyin(pinyin)}]`
+              ),
+          }))}
+        />
+      </aside>
     </div>
   );
 };

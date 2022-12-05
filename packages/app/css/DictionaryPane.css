@@ -1,6 +1,7 @@
 .dictionary-pane {
   background-color: rgb(var(--dark-background-color));
   color: rgb(var(--light-text-color));
+  overflow: auto;
 }
 
 .dictionary-pane a {
@@ -15,13 +16,13 @@
 }
 
 .dictionary-pane .word-info {
-  padding: 2rem;
+  padding: 1rem 2rem;
 }
 
 .dictionary-pane .word-info .word {
   font-size: 7rem;
   font-weight: normal;
-  line-height: 1.2;
+  line-height: 1;
 }
 .dictionary-pane .word-info .word.small {
   font-size: 4rem;

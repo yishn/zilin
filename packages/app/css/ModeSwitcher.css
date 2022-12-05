@@ -1,0 +1,29 @@
+.mode-switcher {
+  padding: 1rem 1.2rem;
+  background: rgb(var(--dark-background-color));
+  text-align: center;
+  color: rgb(var(--light-text-color));
+}
+
+.mode-switcher ul {
+  display: inline-block;
+  list-style: none;
+}
+
+.mode-switcher li {
+  display: inline-block;
+}
+
+.mode-switcher a {
+  display: inline-block;
+  padding: 0.1em 0.5em;
+  background-color: rgba(var(--highlight-color-alt), 0);
+  color: inherit;
+  text-decoration: none;
+  transition: background-color 0.2s;
+}
+
+.mode-switcher .current a {
+  background-color: rgba(var(--highlight-color-alt), 1);
+  color: rgb(var(--dark-background-color));
+}

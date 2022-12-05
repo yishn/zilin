@@ -3,3 +3,12 @@
   grid-template-rows: 100%;
   grid-template-columns: 50% 50%;
 }
+
+.app aside {
+  display: flex;
+  flex-direction: column;
+}
+
+.app aside .dictionary-pane {
+  flex-grow: 1;
+}
