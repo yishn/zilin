@@ -22,9 +22,10 @@ export const TokenTextarea: React.FunctionComponent<TokenTextareaProps> = (
 ) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const tokensContainerRef = useRef<HTMLDivElement>(null);
-  const [scrollPosition, setScrollPosition] = useState<[number, number]>([
-    0, 0,
-  ]);
+  const [contentSize, setContentSize] = useState<{
+    width: number;
+    height: number;
+  }>();
 
   const [tokenRects, setTokenRects] = useState<
     {
@@ -34,23 +35,19 @@ export const TokenTextarea: React.FunctionComponent<TokenTextareaProps> = (
       height: number;
     }[][]
   >();
-  const [bottomPosition, setBottomPosition] = useState<number>();
 
   useEffect(
-    function updateScrollTop() {
-      if (containerRef.current != null) {
-        for (const child of [...containerRef.current.children]) {
-          if (child.scrollTop != scrollPosition[1]) {
-            child.scrollTop = scrollPosition[1];
-          }
+    function updateContentHeight() {
+      const container = containerRef.current;
+      const tokensContainer = tokensContainerRef.current;
+      if (container == null || tokensContainer == null) return;
 
-          if (child.scrollLeft != scrollPosition[0]) {
-            child.scrollLeft = scrollPosition[0];
-          }
-        }
-      }
+      setContentSize({
+        width: tokensContainer.offsetWidth,
+        height: tokensContainer.offsetHeight,
+      });
     },
-    [scrollPosition]
+    [props.tokens]
   );
 
   useEffect(
@@ -63,16 +60,12 @@ export const TokenTextarea: React.FunctionComponent<TokenTextareaProps> = (
       setTokenRects(
         [...tokensContainer.querySelectorAll<HTMLElement>(".token")].map((el) =>
           [...el.getClientRects()].map((rect) => ({
-            left: rect.left + tokensContainer.scrollLeft - container.offsetLeft,
-            top: rect.top + tokensContainer.scrollTop - container.offsetTop,
+            left: rect.left + container.scrollLeft - container.offsetLeft,
+            top: rect.top + container.scrollTop - container.offsetTop,
             width: Math.max(rect.width, 1),
             height: rect.height,
           }))
         )
-      );
-
-      setBottomPosition(
-        tokensContainer.querySelector<HTMLElement>(".bottom")?.offsetTop
       );
     },
     [props.tokens]
@@ -82,19 +75,12 @@ export const TokenTextarea: React.FunctionComponent<TokenTextareaProps> = (
     ? [{ value: props.value } as Token]
     : props.tokens ?? [];
 
-  const handleScroll = useCallback((evt: JSX.TargetedUIEvent<HTMLElement>) => {
-    setScrollPosition([
-      evt.currentTarget.scrollLeft,
-      evt.currentTarget.scrollTop,
-    ]);
-  }, []);
-
   return (
     <div
       ref={containerRef}
       class={"token-textarea " + (props.loading ? "loading " : "")}
     >
-      <div ref={tokensContainerRef} class="tokens" onScroll={handleScroll}>
+      <div ref={tokensContainerRef} class="tokens">
         {tokens?.map((token, i) => (
           <span class="token">
             {[...token.value].map((char) =>
@@ -107,12 +93,12 @@ export const TokenTextarea: React.FunctionComponent<TokenTextareaProps> = (
       </div>
 
       <textarea
+        style={{ ...contentSize }}
         value={props.value}
         onInput={props.onInput}
-        onScroll={handleScroll}
       />
 
-      <div class="overlay" onScroll={handleScroll}>
+      <div class="overlay" style={{ ...contentSize }}>
         {tokenRects?.map((rects, i) => {
           const token = tokens[i];
           if (token == null) return;
@@ -173,17 +159,6 @@ export const TokenTextarea: React.FunctionComponent<TokenTextareaProps> = (
             </div>
           );
         })}
-
-        <div
-          class="padding"
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            top: bottomPosition,
-            height: "1.2rem",
-          }}
-        ></div>
       </div>
     </div>
   );

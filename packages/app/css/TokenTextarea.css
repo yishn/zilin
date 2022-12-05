@@ -1,17 +1,18 @@
 .token-textarea {
-  display: grid;
-  grid-template-rows: 100%;
-  grid-template-columns: 100%;
+  position: relative;
+  overflow: auto;
   font-size: 1.3rem;
   line-height: 2.5;
 }
 
 .token-textarea > * {
-  position: relative;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  min-height: 100%;
   padding: 1.2rem;
-  grid-row: 1;
-  grid-column: 1;
-  overflow: auto;
+  overflow: none;
   white-space: pre-wrap;
 }
 
@@ -19,6 +20,7 @@
   border: none;
   outline: none;
   resize: none;
+  overflow: hidden;
   font: inherit;
   color: inherit;
 }
