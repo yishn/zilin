@@ -1,11 +1,19 @@
 import * as React from "preact";
-import { useMemo, useState } from "preact/hooks";
-import { prettify as prettifyPinyin } from "prettify-pinyin";
+import { useEffect, useMemo, useState } from "preact/hooks";
+import { prettify as pp } from "prettify-pinyin";
 // @deno-types="../../../tokenizer/pkg/chinese_tokenizer.d.ts"
-import init, { tokenize } from "../../../tokenizer/pkg/chinese_tokenizer.js";
+import init, {
+  tokenize,
+  lookupSimplified,
+  lookupTraditional,
+} from "../../../tokenizer/pkg/chinese_tokenizer.js";
 import { useAsync } from "../hooks/useAsync.ts";
 import { TokenTextarea, Token } from "./TokenTextarea.tsx";
 import { DictionaryPane } from "./DictionaryPane.tsx";
+
+function prettifyPinyin(pinyin: string): string {
+  return pp(pinyin.replaceAll("u:", "ü"));
+}
 
 export const App: React.FunctionalComponent = () => {
   const tokenizerLoaded = useAsync(async () => {
@@ -21,14 +29,14 @@ export const App: React.FunctionalComponent = () => {
     }
   }, [tokenizerLoaded.fulfilled, input]);
 
-  const tokenTokenizerTokens = useMemo<Token[] | undefined>(
+  const tokenTokenizerTokens = useMemo(
     () =>
-      tokens?.map((token) => ({
+      tokens?.map<Token>((token) => ({
         value: token.value,
         pronunciation: () =>
           [...new Set(token.entries.map((entry) => entry.pinyin))]
             .sort()
-            .map((pinyin) => prettifyPinyin(pinyin.replaceAll("u:", "ü")))
+            .map((pinyin) => prettifyPinyin(pinyin))
             .join("/"),
         unselectable: token.value.trim() === "" || token.entries.length === 0,
       })),
@@ -37,9 +45,11 @@ export const App: React.FunctionalComponent = () => {
 
   const dictionaryEntries = useMemo(() => {
     if (highlight != null && tokenizerLoaded.fulfilled) {
-      return tokenize(highlight)[0].entries;
+      const entries = lookupSimplified(highlight);
+
+      return entries.length > 0 ? entries : lookupTraditional(highlight);
     }
-  }, [highlight]);
+  }, [tokenizerLoaded.fulfilled, highlight]);
 
   const wordVariants = useMemo(() => {
     const set = new Set(
@@ -51,8 +61,24 @@ export const App: React.FunctionalComponent = () => {
 
     set.delete(highlight!);
 
-    return [...set];
+    return [...set].sort();
   }, [dictionaryEntries, highlight]);
+
+  useEffect(function handleHistory() {
+    const handlePopState = (evt?: PopStateEvent) => {
+      evt?.preventDefault();
+
+      const word = decodeURIComponent(document.location.hash.slice(1));
+
+      setHighlight(word);
+    };
+
+    handlePopState();
+
+    globalThis.addEventListener("popstate", handlePopState);
+
+    return () => globalThis.removeEventListener("popstate", handlePopState);
+  }, []);
 
   return (
     <div class="app">
@@ -62,12 +88,24 @@ export const App: React.FunctionalComponent = () => {
         tokens={tokenTokenizerTokens}
         highlight={highlight}
         onInput={(evt) => setInput(evt.currentTarget.value)}
-        onTokenClick={(evt) => {
-          setHighlight(evt.value);
-        }}
       />
 
-      <DictionaryPane word={highlight} variants={wordVariants} />
+      <DictionaryPane
+        word={highlight}
+        variants={wordVariants}
+        meanings={dictionaryEntries?.map((entry) => ({
+          pinyin: prettifyPinyin(entry.pinyin),
+          explanation: entry.english
+            .replaceAll("/", " / ")
+            .replaceAll("|", " | ")
+            .replaceAll(",", ", ")
+            .replaceAll(":", ": ")
+            .replace(
+              /\[([^\]]*)\]/g,
+              (_, pinyin) => ` [${prettifyPinyin(pinyin)}]`
+            ),
+        }))}
+      />
     </div>
   );
 };

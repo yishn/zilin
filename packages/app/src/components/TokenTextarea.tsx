@@ -15,7 +15,6 @@ export interface TokenTextareaProps {
   tokens?: Token[];
   highlight?: string;
   onInput?: JSX.EventHandler<JSX.TargetedEvent<HTMLTextAreaElement, Event>>;
-  onTokenClick?: (evt: { value: string; index: number }) => void;
 }
 
 export const TokenTextarea: React.FunctionComponent<TokenTextareaProps> = (
@@ -68,13 +67,12 @@ export const TokenTextarea: React.FunctionComponent<TokenTextareaProps> = (
       <div ref={tokensContainerRef} class="tokens">
         {tokens?.map((token, i) => (
           <span class="token">
-            {[...token.value].map((char) =>
-              i === tokens!.length - 1 && char === "\n" ? "\n " : char
-            )}
+            {i === tokens.length - 1 &&
+            token.value[token.value.length - 1] === "\n"
+              ? token.value + " "
+              : token.value}
           </span>
         ))}
-
-        <div class="bottom"></div>
       </div>
 
       {contentSize != null && (
@@ -114,7 +112,7 @@ export const TokenTextarea: React.FunctionComponent<TokenTextareaProps> = (
               >
                 {rects.map((rect) => (
                   <span
-                    class="character"
+                    class="box"
                     style={{
                       position: "absolute",
                       left: rect.left - wordRect.left,
@@ -123,19 +121,7 @@ export const TokenTextarea: React.FunctionComponent<TokenTextareaProps> = (
                       height: rect.height,
                     }}
                   >
-                    {!token.unselectable && (
-                      <a
-                        href="#"
-                        onClick={(evt) => {
-                          evt.preventDefault();
-
-                          props.onTokenClick?.({
-                            value: token.value,
-                            index: i,
-                          });
-                        }}
-                      />
-                    )}
+                    {!token.unselectable && <a href={"#" + token.value} />}
                   </span>
                 ))}
 

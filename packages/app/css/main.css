@@ -13,6 +13,7 @@ html {
   --highlight-color: 155, 55, 120;
   --dark-background-color: 22, 15, 22;
   --light-text-color: 250, 255, 239;
+  --light-link-text-color: 244, 157, 247;
   --color-accent-1: 79, 54, 76;
   --color-accent-2: 94, 64, 95;
   --color-accent-3: 107, 107, 107;
@@ -34,4 +35,8 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
+}
+
+ul {
+  list-style: square;
 }

@@ -1,6 +1,9 @@
 use wasm_bindgen::prelude::wasm_bindgen;
 
-use crate::{cedict::CEDICT_DATA, tokenize};
+use crate::{
+  cedict::{CedictEntry, CEDICT_DATA},
+  lookup_simplified, tokenize, lookup_traditional,
+};
 
 #[wasm_bindgen(typescript_custom_section)]
 const TYPESCRIPT_TYPES: &'static str = r#"
@@ -46,6 +49,17 @@ extern "C" {
   ) -> Entry;
 }
 
+impl<'a> From<&'a CedictEntry> for Entry {
+  fn from(value: &'a CedictEntry) -> Self {
+    create_entry(
+      &value.traditional,
+      &value.simplified,
+      &value.pinyin,
+      &value.english,
+    )
+  }
+}
+
 #[wasm_bindgen(js_name = "tokenize")]
 pub fn _tokenize(input: &str) -> Vec<Token> {
   let tokens = tokenize(input);
@@ -60,23 +74,25 @@ pub fn _tokenize(input: &str) -> Vec<Token> {
         token.column,
         token
           .entries
-          .map(|entries| {
-            entries
-              .into_iter()
-              .map(|entry| {
-                create_entry(
-                  &entry.traditional,
-                  &entry.simplified,
-                  &entry.pinyin,
-                  &entry.english,
-                )
-              })
-              .collect()
-          })
+          .map(|entries| entries.iter().map(Entry::from).collect())
           .unwrap_or_default(),
       )
     })
     .collect()
+}
+
+#[wasm_bindgen(js_name = "lookupSimplified")]
+pub fn _lookup_simplified(word: &str) -> Vec<Entry> {
+  lookup_simplified(word)
+    .map(|entries| entries.iter().map(Entry::from).collect())
+    .unwrap_or_default()
+}
+
+#[wasm_bindgen(js_name = "lookupTraditional")]
+pub fn _lookup_traditional(word: &str) -> Vec<Entry> {
+  lookup_traditional(word)
+    .map(|entries| entries.iter().map(Entry::from).collect())
+    .unwrap_or_default()
 }
 
 #[wasm_bindgen(start)]

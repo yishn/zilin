@@ -44,7 +44,7 @@ pub fn tokenize(input: &str) -> Vec<Token> {
         } else if simplified_count > traditional_count {
           simplified_entries
         } else {
-          traditional_entries
+          simplified_entries
         };
 
       tokens.push(Token {
@@ -146,6 +146,14 @@ pub fn tokenize(input: &str) -> Vec<Token> {
   }
 
   tokens
+}
+
+pub fn lookup_simplified(word: &str) -> Option<&'static Vec<CedictEntry>> {
+  CEDICT_DATA.get_simplified(word)
+}
+
+pub fn lookup_traditional(word: &str) -> Option<&'static Vec<CedictEntry>> {
+  CEDICT_DATA.get_traditional(word)
 }
 
 #[cfg(test)]
