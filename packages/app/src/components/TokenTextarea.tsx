@@ -1,6 +1,6 @@
 import * as React from "preact";
 import type { JSX } from "preact";
-import { useCallback, useEffect, useRef, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import { useResizeObserver } from "../hooks/useResizeObserver.ts";
 
 export interface Token {
