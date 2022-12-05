@@ -63,7 +63,16 @@ export const TokenTextarea: React.FunctionComponent<TokenTextareaProps> = (
         }}
       />
 
-      <div ref={tokensContainerRef} class="tokens">
+      <div
+        ref={tokensContainerRef}
+        class="tokens"
+        onScroll={(evt) => {
+          setScrollPosition([
+            evt.currentTarget.scrollLeft,
+            evt.currentTarget.scrollTop,
+          ]);
+        }}
+      >
         {tokens?.map((token, i) => (
           <span
             class={
