@@ -27,6 +27,7 @@ export const App: React.FunctionalComponent = () => {
     <div class="app">
       <TokenTextarea
         value={input}
+        loading={!tokenizerLoaded.fulfilled}
         tokens={tokens?.map((token) => ({
           value: token.value,
           pronunciation: [

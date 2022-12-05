@@ -10,6 +10,7 @@ export interface Token {
 
 export interface TokenTextareaProps {
   value?: string;
+  loading?: boolean;
   tokens?: Token[];
   highlight?: string;
   onInput?: JSX.EventHandler<JSX.TargetedEvent<HTMLTextAreaElement, Event>>;
@@ -42,8 +43,15 @@ export const TokenTextarea: React.FunctionComponent<TokenTextareaProps> = (
     [scrollPosition]
   );
 
+  const tokens = props.loading
+    ? [{ value: props.value } as Token]
+    : props.tokens ?? [];
+
   return (
-    <div ref={containerRef} class="token-textarea">
+    <div
+      ref={containerRef}
+      class={"token-textarea " + (props.loading ? "loading " : "")}
+    >
       <textarea
         value={props.value}
         onInput={props.onInput}
@@ -56,7 +64,7 @@ export const TokenTextarea: React.FunctionComponent<TokenTextareaProps> = (
       />
 
       <div ref={tokensContainerRef} class="tokens">
-        {props.tokens?.map((token, i) => (
+        {tokens?.map((token, i) => (
           <span
             class={
               "token " + (props.highlight === token.value ? "highlight " : "")
@@ -71,7 +79,7 @@ export const TokenTextarea: React.FunctionComponent<TokenTextareaProps> = (
                     : "")
                 }
               >
-                {i === props.tokens!.length - 1 && char === "\n" ? "\n " : char}
+                {i === tokens!.length - 1 && char === "\n" ? "\n " : char}
 
                 {!token.unselectable && (
                   <a

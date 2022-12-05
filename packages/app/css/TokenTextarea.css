@@ -43,9 +43,35 @@
   transition: background-color 0.2s;
 }
 
+.token-textarea.loading .character a {
+  pointer-events: none;
+}
+
 .token-textarea:hover .character a,
 .token-textarea textarea:focus + .tokens .character a {
   background-color: rgba(var(--highlight-color), 0.2);
+}
+
+.token-textarea.loading .character a {
+  background: rgba(var(--highlight-color), 0.2)
+    linear-gradient(
+      to right,
+      rgba(var(--highlight-color), 0) 30%,
+      rgb(var(--highlight-color)) 50%,
+      rgba(var(--highlight-color), 0) 70%
+    )
+    no-repeat fixed;
+  background-size: 10rem 100%;
+  animation: 3s linear 0s infinite token-textarea-loading;
+}
+
+@keyframes token-textarea-loading {
+  from {
+    background-position: -10rem 0;
+  }
+  to {
+    background-position: calc(100% + 10em) 0;
+  }
 }
 
 .token-textarea .character.highlight a,
@@ -53,11 +79,11 @@
   background-color: rgb(var(--highlight-color));
 }
 
-.token-textarea .character:first-child a {
+.token-textarea .token:not(.highlight) .character:first-child a {
   left: 0.1em;
 }
 
-.token-textarea .character:last-child a {
+.token-textarea .token:not(.highlight) .character:last-child a {
   right: 0.1em;
 }
 
@@ -65,7 +91,9 @@
   position: absolute;
   top: 0;
   left: 50%;
-  color: rgba(var(--text-color), .8);
+  padding: 0 0.5em;
+  background-color: white;
+  color: rgba(var(--text-color), 0.8);
   font-size: 0.8rem;
   line-height: 1;
   transform: translate(-50%, -100%);
