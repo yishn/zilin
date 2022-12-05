@@ -28,6 +28,7 @@
   user-select: none;
 }
 
+.token-textarea .token,
 .token-textarea .character {
   position: relative;
 }
@@ -44,7 +45,7 @@
 
 .token-textarea:hover .character a,
 .token-textarea textarea:focus + .tokens .character a {
-  background-color: rgba(var(--highlight-color), .2);
+  background-color: rgba(var(--highlight-color), 0.2);
 }
 
 .token-textarea .character.highlight a,
@@ -58,4 +59,15 @@
 
 .token-textarea .character:last-child a {
   right: 0.1em;
+}
+
+.token-textarea .token .pronunciation {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  color: rgba(var(--text-color), .8);
+  font-size: 0.8rem;
+  line-height: 1;
+  transform: translate(-50%, -100%);
+  white-space: nowrap;
 }
