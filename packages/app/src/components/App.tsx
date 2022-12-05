@@ -35,7 +35,7 @@ export const App: React.FunctionalComponent = () => {
               pronunciation: () =>
                 [...new Set(token.entries.map((entry) => entry.pinyin))]
                   .sort()
-                  .map((pinyin) => prettifyPinyin(pinyin))
+                  .map((pinyin) => prettifyPinyin(pinyin.replaceAll("u:", "ü")))
                   .join("/"),
               unselectable:
                 token.value.trim() === "" || token.entries.length === 0,
