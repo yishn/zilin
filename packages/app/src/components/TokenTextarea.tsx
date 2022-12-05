@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "preact/hooks";
 
 export interface Token {
   value: string;
-  pronunciation?: string;
+  pronunciation?: () => string;
   unselectable?: boolean;
 }
 
@@ -107,7 +107,7 @@ export const TokenTextarea: React.FunctionComponent<TokenTextareaProps> = (
             ))}
 
             {props.highlight === token.value && (
-              <span class="pronunciation">{token.pronunciation}</span>
+              <span class="pronunciation">{token.pronunciation?.()}</span>
             )}
           </span>
         ))}

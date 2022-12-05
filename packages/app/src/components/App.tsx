@@ -1,6 +1,6 @@
 import * as React from "preact";
 import { useMemo, useState } from "preact/hooks";
-import { prettify } from "prettify-pinyin";
+import { prettify as prettifyPinyin } from "prettify-pinyin";
 import { TokenTextarea } from "./TokenTextarea.tsx";
 import { useAsync } from "../hooks/useAsync.ts";
 // @deno-types="../../../tokenizer/pkg/chinese_tokenizer.d.ts"
@@ -30,11 +30,11 @@ export const App: React.FunctionalComponent = () => {
         loading={!tokenizerLoaded.fulfilled}
         tokens={tokens?.map((token) => ({
           value: token.value,
-          pronunciation: [
-            ...new Set(token.entries.map((entry) => prettify(entry.pinyin))),
-          ]
-            .sort()
-            .join("/"),
+          pronunciation: () =>
+            [...new Set(token.entries.map((entry) => entry.pinyin))]
+              .sort()
+              .map((x) => prettifyPinyin(x))
+              .join("/"),
           unselectable: token.value.trim() === "" || token.entries.length === 0,
         }))}
         highlight={highlight}
