@@ -1,10 +1,11 @@
 import * as React from "preact";
 import { useMemo, useState } from "preact/hooks";
 import { prettify as prettifyPinyin } from "prettify-pinyin";
-import { TokenTextarea, Token } from "./TokenTextarea.tsx";
-import { useAsync } from "../hooks/useAsync.ts";
 // @deno-types="../../../tokenizer/pkg/chinese_tokenizer.d.ts"
 import init, { tokenize } from "../../../tokenizer/pkg/chinese_tokenizer.js";
+import { useAsync } from "../hooks/useAsync.ts";
+import { TokenTextarea, Token } from "./TokenTextarea.tsx";
+import { DictionaryPane } from "./DictionaryPane.tsx";
 
 export const App: React.FunctionalComponent = () => {
   const tokenizerLoaded = useAsync(async () => {
@@ -34,6 +35,25 @@ export const App: React.FunctionalComponent = () => {
     [tokens]
   );
 
+  const dictionaryEntries = useMemo(() => {
+    if (highlight != null && tokenizerLoaded.fulfilled) {
+      return tokenize(highlight)[0].entries;
+    }
+  }, [highlight]);
+
+  const wordVariants = useMemo(() => {
+    const set = new Set(
+      dictionaryEntries?.flatMap((entry) => [
+        entry.simplified,
+        entry.traditional,
+      ])
+    );
+
+    set.delete(highlight!);
+
+    return [...set];
+  }, [dictionaryEntries, highlight]);
+
   return (
     <div class="app">
       <TokenTextarea
@@ -47,9 +67,7 @@ export const App: React.FunctionalComponent = () => {
         }}
       />
 
-      <div class="info">
-        <h1>{highlight}</h1>
-      </div>
+      <DictionaryPane word={highlight} variants={wordVariants} />
     </div>
   );
 };

@@ -3,14 +3,3 @@
   grid-template-rows: 100%;
   grid-template-columns: 50% 50%;
 }
-
-.app .input {
-  display: grid;
-  grid-template-rows: 100%;
-  grid-template-columns: 100%;
-}
-
-.app .info {
-  background-color: rgb(var(--dark-background-color));
-  color: rgb(var(--light-text-color));
-}
