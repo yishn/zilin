@@ -41,7 +41,7 @@
   top: calc(100% + 0.1em);
   left: 0;
   right: 0;
-  height: 0.2em;
+  height: 0.25em;
   pointer-events: all;
   transition: background-color 0.2s;
 }
@@ -51,7 +51,7 @@
 }
 
 .token-textarea:hover .character a,
-.token-textarea textarea:focus + .overlay .character a {
+.token-textarea:focus-within .character a {
   background-color: rgba(var(--highlight-color), 0.2);
 }
 
@@ -77,16 +77,15 @@
   }
 }
 
-.token-textarea .character.highlight a,
-.token-textarea textarea:focus + .overlay .character.highlight a {
+.token-textarea .word.highlight .character a {
   background-color: rgb(var(--highlight-color));
 }
 
-.token-textarea .character:first-child:not(.highlight) a {
+.token-textarea .word:not(.highlight) .character:first-child a {
   left: 0.1em;
 }
 
-.token-textarea .character:last-child:not(.highlight) a {
+.token-textarea .word:not(.highlight) .character:last-child a {
   right: 0.1em;
 }
 

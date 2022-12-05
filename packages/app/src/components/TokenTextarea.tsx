@@ -1,6 +1,7 @@
 import * as React from "preact";
 import type { JSX } from "preact";
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
+import { useResizeObserver } from "../hooks/useResizeObserver.ts";
 
 export interface Token {
   value: string;
@@ -22,10 +23,7 @@ export const TokenTextarea: React.FunctionComponent<TokenTextareaProps> = (
 ) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const tokensContainerRef = useRef<HTMLDivElement>(null);
-  const [contentSize, setContentSize] = useState<{
-    width: number;
-    height: number;
-  }>();
+  const contentSize = useResizeObserver(tokensContainerRef);
 
   const [tokenRects, setTokenRects] = useState<
     {
@@ -37,25 +35,12 @@ export const TokenTextarea: React.FunctionComponent<TokenTextareaProps> = (
   >();
 
   useEffect(
-    function updateContentHeight() {
-      const container = containerRef.current;
-      const tokensContainer = tokensContainerRef.current;
-      if (container == null || tokensContainer == null) return;
-
-      setContentSize({
-        width: tokensContainer.offsetWidth,
-        height: tokensContainer.offsetHeight,
-      });
-    },
-    [props.tokens]
-  );
-
-  useEffect(
     function updateTokenRects() {
       const container = containerRef.current;
       const tokensContainer = tokensContainerRef.current;
 
-      if (container == null || tokensContainer == null) return;
+      if (contentSize == null || container == null || tokensContainer == null)
+        return;
 
       setTokenRects(
         [...tokensContainer.querySelectorAll<HTMLElement>(".token")].map((el) =>
@@ -68,7 +53,7 @@ export const TokenTextarea: React.FunctionComponent<TokenTextareaProps> = (
         )
       );
     },
-    [props.tokens]
+    [contentSize, props.tokens]
   );
 
   const tokens = props.loading
@@ -92,74 +77,76 @@ export const TokenTextarea: React.FunctionComponent<TokenTextareaProps> = (
         <div class="bottom"></div>
       </div>
 
-      <textarea
-        style={{ ...contentSize }}
-        value={props.value}
-        onInput={props.onInput}
-      />
+      {contentSize != null && (
+        <textarea
+          style={{ ...contentSize }}
+          value={props.value}
+          onInput={props.onInput}
+        />
+      )}
 
-      <div class="overlay" style={{ ...contentSize }}>
-        {tokenRects?.map((rects, i) => {
-          const token = tokens[i];
-          if (token == null) return;
+      {contentSize != null && (
+        <div class="overlay" style={{ ...contentSize }}>
+          {tokenRects?.map((rects, i) => {
+            const token = tokens[i];
+            if (token == null) return;
 
-          const wordRect = {
-            left: rects[0]?.left,
-            top: rects[0]?.top,
-            height: rects[0]?.height,
-            width: rects
-              .filter((rect) => rect.top === rects[0]?.top)
-              .map((rect) => rect.width)
-              .reduce((sum, x) => sum + x, 0),
-          };
+            const wordRect = {
+              left: rects[0]?.left,
+              top: rects[0]?.top,
+              height: rects[0]?.height,
+              width: rects
+                .filter((rect) => rect.top === rects[0]?.top)
+                .map((rect) => rect.width)
+                .reduce((sum, x) => sum + x, 0),
+            };
 
-          return (
-            <div
-              class={
-                "word " + (props.highlight === token.value ? "highlight " : "")
-              }
-              style={{
-                position: "absolute",
-                ...wordRect,
-              }}
-            >
-              {rects.map((rect) => (
-                <span
-                  class={
-                    "character " +
-                    (props.highlight === token.value ? "highlight " : "")
-                  }
-                  style={{
-                    position: "absolute",
-                    left: rect.left - wordRect.left,
-                    top: rect.top - wordRect.top,
-                    width: rect.width,
-                    height: rect.height,
-                  }}
-                >
-                  {!token.unselectable && (
-                    <a
-                      href="#"
-                      onClick={(evt) => {
-                        evt.preventDefault();
+            return (
+              <div
+                class={
+                  "word " +
+                  (props.highlight === token.value ? "highlight " : "")
+                }
+                style={{
+                  position: "absolute",
+                  ...wordRect,
+                }}
+              >
+                {rects.map((rect) => (
+                  <span
+                    class="character"
+                    style={{
+                      position: "absolute",
+                      left: rect.left - wordRect.left,
+                      top: rect.top - wordRect.top,
+                      width: rect.width,
+                      height: rect.height,
+                    }}
+                  >
+                    {!token.unselectable && (
+                      <a
+                        href="#"
+                        onClick={(evt) => {
+                          evt.preventDefault();
 
-                        props.onTokenClick?.({
-                          value: token.value,
-                          index: i,
-                        });
-                      }}
-                    />
-                  )}
-                </span>
-              ))}
+                          props.onTokenClick?.({
+                            value: token.value,
+                            index: i,
+                          });
+                        }}
+                      />
+                    )}
+                  </span>
+                ))}
 
-              {props.highlight === token.value && (
-                <span class="pronunciation">{token.pronunciation?.()}</span>
-              )}
-            </div>
-          );
-        })}
-      </div>
+                {props.highlight === token.value && (
+                  <span class="pronunciation">{token.pronunciation?.()}</span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };
