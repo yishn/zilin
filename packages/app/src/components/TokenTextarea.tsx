@@ -1,6 +1,6 @@
 import * as React from "preact";
-import type { FunctionalComponent, JSX } from "preact";
-import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+import type { JSX } from "preact";
+import { useEffect, useRef, useState } from "preact/hooks";
 
 export interface Token {
   value: string;
@@ -10,11 +10,12 @@ export interface Token {
 export interface TokenTextareaProps {
   value?: string;
   tokens?: Token[];
-  loading?: boolean;
+  highlight?: string;
   onInput?: JSX.EventHandler<JSX.TargetedEvent<HTMLTextAreaElement, Event>>;
+  onTokenClick?: (evt: { value: string; index: number }) => void;
 }
 
-export const TokenTextarea: FunctionalComponent<TokenTextareaProps> = (
+export const TokenTextarea: React.FunctionComponent<TokenTextareaProps> = (
   props
 ) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -55,13 +56,34 @@ export const TokenTextarea: FunctionalComponent<TokenTextareaProps> = (
 
       <div ref={tokensContainerRef} class="tokens">
         {props.tokens?.map((token, i) => (
-          <span class="token">
+          <span
+            class={
+              "token " + (props.highlight === token.value ? "highlight " : "")
+            }
+          >
             {[...token.value].map((char) => (
-              <span class="character">
+              <span
+                class={
+                  "character " +
+                  (props.highlight === char || props.highlight === token.value
+                    ? "highlight "
+                    : "")
+                }
+              >
                 {i === props.tokens!.length - 1 && char === "\n" ? "\n " : char}
 
-                {!token.unselectable && token.value.trim() !== "" && (
-                  <a href="#" />
+                {!token.unselectable && (
+                  <a
+                    href="#"
+                    onClick={(evt) => {
+                      evt.preventDefault();
+
+                      props.onTokenClick?.({
+                        value: token.value,
+                        index: i,
+                      });
+                    }}
+                  />
                 )}
               </span>
             ))}

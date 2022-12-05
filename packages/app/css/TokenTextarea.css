@@ -19,6 +19,7 @@
   outline: none;
   resize: none;
   font: inherit;
+  color: inherit;
 }
 
 .token-textarea .tokens {
@@ -43,7 +44,12 @@
 
 .token-textarea:hover .character a,
 .token-textarea textarea:focus + .tokens .character a {
-  background-color: #ccc;
+  background-color: rgba(var(--highlight-color), .2);
+}
+
+.token-textarea .character.highlight a,
+.token-textarea textarea:focus + .tokens .character.highlight a {
+  background-color: rgb(var(--highlight-color));
 }
 
 .token-textarea .character:first-child a {

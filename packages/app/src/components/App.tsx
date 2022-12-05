@@ -1,36 +1,45 @@
 import * as React from "preact";
 import { useMemo, useState } from "preact/hooks";
-import type { FunctionalComponent } from "preact";
-import { Token, TokenTextarea } from "./TokenTextarea.tsx";
+import { TokenTextarea } from "./TokenTextarea.tsx";
 import { useAsync } from "../hooks/useAsync.ts";
-import init, { tokenize } from "../../../tokenizer/pkg/chinese_tokenizer.js";
+// @deno-types="../../../tokenizer/pkg/chinese_tokenizer.d.ts"
+import init, {
+  tokenize,
+  Token,
+} from "../../../tokenizer/pkg/chinese_tokenizer.js";
 
-export const App: FunctionalComponent = () => {
+export const App: React.FunctionalComponent = () => {
   const tokenizerLoaded = useAsync(async () => {
     await init("./packages/tokenizer/pkg/chinese_tokenizer_bg.wasm");
   }, []);
 
   const [input, setInput] = useState("");
-  
-  const tokens = useMemo<Token[]>(() => {
-    if (!tokenizerLoaded.fulfilled) {
-      return [{ value: input }];
-    } else {
+  const [highlight, setHighlight] = useState<string>();
+
+  const tokens = useMemo<Token[] | undefined>(() => {
+    if (tokenizerLoaded.fulfilled) {
       return tokenize(input);
     }
   }, [tokenizerLoaded.fulfilled, input]);
 
   return (
     <div class="app">
-      <div class="input">
-        <TokenTextarea
-          value={input}
-          tokens={tokens}
-          onInput={(evt) => setInput(evt.currentTarget.value)}
-        />
-      </div>
+      <TokenTextarea
+        value={input}
+        tokens={tokens?.map((token) => ({
+          value: token.value,
+          unselectable: token.value.trim() === "" || token.entries.length === 0,
+        }))}
+        highlight={highlight}
+        onInput={(evt) => setInput(evt.currentTarget.value)}
+        onTokenClick={(evt) => {
+          setHighlight(evt.value);
+        }}
+      />
 
-      <div class="info"></div>
+      <div class="info">
+        <h1>{highlight}</h1>
+      </div>
     </div>
   );
 };
