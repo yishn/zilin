@@ -1,4 +1,5 @@
-use std::{collections::HashMap, iter::Peekable};
+use rustc_hash::FxHashMap as HashMap;
+use std::iter::Peekable;
 
 #[derive(Debug, Clone)]
 pub struct Trie<T> {
@@ -14,13 +15,13 @@ impl<T> Default for Trie<T> {
 impl<T> Trie<T> {
   pub fn new() -> Self {
     Self {
-      data: HashMap::new(),
+      data: HashMap::with_hasher(Default::default()),
     }
   }
 
   pub fn with_capacity(capacity: usize) -> Self {
     Self {
-      data: HashMap::with_capacity(capacity),
+      data: HashMap::with_capacity_and_hasher(capacity, Default::default()),
     }
   }
 
@@ -56,9 +57,15 @@ impl<T> Trie<T> {
     let next_char = chars.next();
 
     if let Some(ch) = next_char {
-      let entry = self.data.entry(ch).or_default();
+      let has_children = !chars.peek().is_none();
+      let entry = self.data.entry(ch).or_insert_with(|| {
+        (
+          None,
+          Box::new(Trie::with_capacity(if has_children { 1 } else { 0 })),
+        )
+      });
 
-      if chars.peek().is_none() {
+      if !has_children {
         Some(entry)
       } else {
         entry.1.entry_mut(chars)
