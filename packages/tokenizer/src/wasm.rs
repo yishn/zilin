@@ -2,7 +2,7 @@ use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::{
   cedict::{CedictEntry, CEDICT_DATA},
-  lookup_simplified, lookup_traditional, tokenize,
+  lookup_simplified, lookup_traditional, tokenize, Token,
 };
 
 #[wasm_bindgen(typescript_custom_section)]
@@ -12,7 +12,7 @@ const TYPESCRIPT_TYPES: &'static str = r#"
     offset: number;
     line: number;
     column: number;
-    entries: Entry[];
+    hasEntries: boolean;
   }
 
   export interface Entry {
@@ -26,10 +26,10 @@ const TYPESCRIPT_TYPES: &'static str = r#"
 #[wasm_bindgen(module = "/js/util.js")]
 extern "C" {
   #[wasm_bindgen(typescript_type = "Token")]
-  pub type Token;
+  pub type JsToken;
 
   #[wasm_bindgen(typescript_type = "Entry")]
-  pub type Entry;
+  pub type JsEntry;
 
   #[wasm_bindgen(js_name = "createToken")]
   fn create_token(
@@ -37,8 +37,8 @@ extern "C" {
     offset: usize,
     line: usize,
     column: usize,
-    entries: Vec<Entry>,
-  ) -> Token;
+    has_entries: bool,
+  ) -> JsToken;
 
   #[wasm_bindgen(js_name = "createEntry")]
   fn create_entry(
@@ -46,10 +46,22 @@ extern "C" {
     simplified: &str,
     pinyin: &str,
     english: &str,
-  ) -> Entry;
+  ) -> JsEntry;
 }
 
-impl<'a> From<&'a CedictEntry> for Entry {
+impl<'a> From<&'a Token> for JsToken {
+  fn from(value: &'a Token) -> Self {
+    create_token(
+      &value.value,
+      value.offset,
+      value.line,
+      value.column,
+      value.entries.map(|vec| vec.len() > 0).unwrap_or(false),
+    )
+  }
+}
+
+impl<'a> From<&'a CedictEntry> for JsEntry {
   fn from(value: &'a CedictEntry) -> Self {
     create_entry(
       &value.traditional,
@@ -61,37 +73,23 @@ impl<'a> From<&'a CedictEntry> for Entry {
 }
 
 #[wasm_bindgen(js_name = "tokenize")]
-pub fn _tokenize(input: &str) -> Vec<Token> {
+pub fn _tokenize(input: &str) -> Vec<JsToken> {
   let tokens = tokenize(input);
 
-  tokens
-    .into_iter()
-    .map(|token| {
-      create_token(
-        &token.value,
-        token.offset,
-        token.line,
-        token.column,
-        token
-          .entries
-          .map(|entries| entries.iter().map(Entry::from).collect())
-          .unwrap_or_default(),
-      )
-    })
-    .collect()
+  tokens.iter().map(JsToken::from).collect()
 }
 
 #[wasm_bindgen(js_name = "lookupSimplified")]
-pub fn _lookup_simplified(word: &str) -> Vec<Entry> {
+pub fn _lookup_simplified(word: &str) -> Vec<JsEntry> {
   lookup_simplified(word)
-    .map(|entries| entries.iter().map(Entry::from).collect())
+    .map(|entries| entries.iter().map(JsEntry::from).collect())
     .unwrap_or_default()
 }
 
 #[wasm_bindgen(js_name = "lookupTraditional")]
-pub fn _lookup_traditional(word: &str) -> Vec<Entry> {
+pub fn _lookup_traditional(word: &str) -> Vec<JsEntry> {
   lookup_traditional(word)
-    .map(|entries| entries.iter().map(Entry::from).collect())
+    .map(|entries| entries.iter().map(JsEntry::from).collect())
     .unwrap_or_default()
 }
 

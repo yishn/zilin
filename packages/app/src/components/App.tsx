@@ -31,22 +31,28 @@ export const App: React.FunctionalComponent = () => {
     }
   }, [tokenizerLoaded.fulfilled, input]);
 
+  const lookup = (word: string, mode: ModeValue) =>
+    mode === "simplified" ? lookupSimplified(word) : lookupTraditional(word);
+
   const tokenTokenizerTokens = useMemo(
     () =>
       tokens?.map<Token>((token) => ({
         value: token.value,
-        pronunciation: () =>
-          [...new Set(token.entries.map((entry) => entry.pinyin))]
+        pronunciation: () => {
+          const entries = [
+            ...lookupSimplified(token.value),
+            ...lookupTraditional(token.value),
+          ];
+
+          return [...new Set(entries.map((entry) => entry.pinyin))]
             .sort()
             .map((pinyin) => prettifyPinyin(pinyin))
-            .join("/"),
-        unselectable: token.value.trim() === "" || token.entries.length === 0,
+            .join("/");
+        },
+        unselectable: token.value.trim() === "" || !token.hasEntries,
       })),
     [tokens]
   );
-
-  const lookup = (word: string, mode: ModeValue) =>
-    mode === "simplified" ? lookupSimplified(word) : lookupTraditional(word);
 
   const dictionaryEntries = useMemo(() => {
     if (highlight != null && tokenizerLoaded.fulfilled) {

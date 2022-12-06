@@ -1,7 +1,6 @@
 .mode-switcher {
-  padding: 1rem 1.2rem;
+  padding: 1rem calc(2rem - 0.5em);
   background: rgb(var(--dark-background-color));
-  text-align: center;
   color: rgb(var(--light-text-color));
 }
 

@@ -1,10 +1,10 @@
-export function createToken(value, offset, line, column, entries) {
+export function createToken(value, offset, line, column, hasEntries) {
   return {
     value,
     offset,
     line,
     column,
-    entries,
+    hasEntries,
   };
 }
 
