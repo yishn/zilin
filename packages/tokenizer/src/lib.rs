@@ -77,19 +77,20 @@ pub fn tokenize(input: &str) -> Vec<Token> {
 
     // Match exactly one Chinese character
 
-    let is_chinese = |ch: char| {
-      CHINESE_PUNCTUATION.contains(&ch)
-        || CEDICT_DATA
-          .get_simplified(&ch.to_string())
-          .map(|vec| vec.len() > 0)
-          .unwrap_or(false)
-        || CEDICT_DATA
-          .get_traditional(&ch.to_string())
-          .map(|vec| vec.len() > 0)
-          .unwrap_or(false)
+    let is_chinese = |ch: &char| {
+      !ch.is_ascii_alphanumeric()
+        && (CHINESE_PUNCTUATION.contains(&ch)
+          || CEDICT_DATA
+            .get_simplified(&ch.to_string())
+            .map(|vec| vec.len() > 0)
+            .unwrap_or(false)
+          || CEDICT_DATA
+            .get_traditional(&ch.to_string())
+            .map(|vec| vec.len() > 0)
+            .unwrap_or(false))
     };
 
-    if is_chinese(ch) || ch.is_ascii_whitespace() {
+    if ch.is_ascii_whitespace() || is_chinese(&ch) {
       push_token(&ch.to_string());
       continue;
     }
@@ -100,12 +101,12 @@ pub fn tokenize(input: &str) -> Vec<Token> {
 
     word.push(ch);
 
-    while let Some(&(_, next_ch)) = chars.peek() {
+    while let Some((_, next_ch)) = chars.peek() {
       if next_ch.is_ascii_whitespace() || is_chinese(next_ch) {
         break;
       }
 
-      word.push(next_ch);
+      word.push(*next_ch);
       chars.next();
     }
 

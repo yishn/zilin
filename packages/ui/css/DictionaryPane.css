@@ -5,14 +5,16 @@
 }
 
 .dictionary-pane a {
-  color: rgb(var(--light-link-text-color));
-  opacity: 0.7;
-  transition: opacity 0.2s;
+  border-bottom: 1px solid rgba(var(--light-link-text-color), 0.4);
+  padding-bottom: 0.1em;
+  color: rgba(var(--light-link-text-color), 0.7);
+  text-decoration: none;
+  transition: color 0.2s;
 }
 
 .dictionary-pane a:hover,
 .dictionary-pane a:focus {
-  opacity: 1;
+  color: rgba(var(--light-link-text-color), 1);
 }
 
 .dictionary-pane .word-info {
@@ -39,19 +41,23 @@
 }
 
 .dictionary-pane .word-info .variants a {
-  text-decoration: none;
+  border-bottom: 0;
 }
 
 .dictionary-pane .meanings {
   margin: 1.5rem 0;
-  color: rgba(var(--light-text-color), .7);
+  color: rgba(var(--light-text-color), 0.7);
 }
 
 .dictionary-pane .meanings li {
-  margin: .5em 0;
+  margin: 0.5em 0;
 }
 
 .dictionary-pane .meanings .pinyin {
   margin-right: 1rem;
   color: rgb(var(--light-text-color));
+}
+
+.dictionary-pane .meanings .separator {
+  opacity: 0.5;
 }

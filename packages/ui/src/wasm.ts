@@ -2,15 +2,18 @@
 import * as tokenizer from "../../tokenizer/pkg/chinese_tokenizer.js";
 
 // deno-lint-ignore ban-types
-const loadedMap = new WeakMap<object, boolean>();
+const loadedMap = new WeakMap<object, Promise<void>>();
 
 export async function loadTokenizer() {
-  if (!loadedMap.get(tokenizer)) {
-    await tokenizer.default(
-      "./packages/tokenizer/pkg/chinese_tokenizer_bg.wasm",
+  if (!loadedMap.has(tokenizer)) {
+    loadedMap.set(
+      tokenizer,
+      tokenizer.default(
+        "./packages/tokenizer/pkg/chinese_tokenizer_bg.wasm",
+      ).then(() => {}),
     );
-    loadedMap.set(tokenizer, true);
   }
 
+  await loadedMap.get(tokenizer);
   return tokenizer;
 }

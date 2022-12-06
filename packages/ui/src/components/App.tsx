@@ -20,11 +20,10 @@ export const App: React.FunctionalComponent = () => {
   const [input, setInput] = useState("");
   const [highlight, setHighlight] = useState<string>();
 
-  const tokens = useMemo(() => {
-    if (tokenizer.value != null) {
-      return tokenizer.value.tokenize(input);
-    }
-  }, [tokenizer.value, input]);
+  const tokens = useMemo(
+    () => tokenizer.value?.tokenize(input),
+    [tokenizer.value, input]
+  );
 
   const lookup = (word: string, mode: ModeValue) =>
     mode === "simplified"
