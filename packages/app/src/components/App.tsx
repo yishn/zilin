@@ -1,12 +1,7 @@
 import * as React from "preact";
 import { useEffect, useMemo, useState } from "preact/hooks";
 import { prettify as pp } from "prettify-pinyin";
-// @deno-types="../../../tokenizer/pkg/chinese_tokenizer.d.ts"
-import init, {
-  tokenize,
-  lookupSimplified,
-  lookupTraditional,
-} from "../../../tokenizer/pkg/chinese_tokenizer.js";
+import { loadTokenizer } from "../wasm.ts";
 import { useAsync } from "../hooks/useAsync.ts";
 import { TokenTextarea, Token } from "./TokenTextarea.tsx";
 import { DictionaryPane } from "./DictionaryPane.tsx";
@@ -17,8 +12,8 @@ function prettifyPinyin(pinyin: string): string {
 }
 
 export const App: React.FunctionalComponent = () => {
-  const tokenizerLoaded = useAsync(async () => {
-    await init("./packages/tokenizer/pkg/chinese_tokenizer_bg.wasm");
+  const tokenizer = useAsync(async () => {
+    return await loadTokenizer();
   }, []);
 
   const [mode, setMode] = useState<ModeValue>("simplified");
@@ -26,13 +21,15 @@ export const App: React.FunctionalComponent = () => {
   const [highlight, setHighlight] = useState<string>();
 
   const tokens = useMemo(() => {
-    if (tokenizerLoaded.fulfilled) {
-      return tokenize(input);
+    if (tokenizer.value != null) {
+      return tokenizer.value.tokenize(input);
     }
-  }, [tokenizerLoaded.fulfilled, input]);
+  }, [tokenizer.value, input]);
 
   const lookup = (word: string, mode: ModeValue) =>
-    mode === "simplified" ? lookupSimplified(word) : lookupTraditional(word);
+    mode === "simplified"
+      ? tokenizer.value?.lookupSimplified(word)
+      : tokenizer.value?.lookupTraditional(word);
 
   const tokenTokenizerTokens = useMemo(
     () =>
@@ -40,8 +37,8 @@ export const App: React.FunctionalComponent = () => {
         value: token.value,
         pronunciation: () => {
           const entries = [
-            ...lookupSimplified(token.value),
-            ...lookupTraditional(token.value),
+            ...(tokenizer.value?.lookupSimplified(token.value) ?? []),
+            ...(tokenizer.value?.lookupTraditional(token.value) ?? []),
           ];
 
           return [...new Set(entries.map((entry) => entry.pinyin))]
@@ -55,16 +52,16 @@ export const App: React.FunctionalComponent = () => {
   );
 
   const dictionaryEntries = useMemo(() => {
-    if (highlight != null && tokenizerLoaded.fulfilled) {
-      return lookup(highlight, mode);
+    if (highlight != null && tokenizer.fulfilled) {
+      return lookup(highlight, mode) ?? [];
     }
 
     return [];
-  }, [mode, tokenizerLoaded.fulfilled, highlight]);
+  }, [mode, tokenizer.fulfilled, highlight]);
 
   const wordVariants = useMemo(() => {
     const set = new Set(
-      dictionaryEntries?.flatMap((entry) => [
+      dictionaryEntries.flatMap((entry) => [
         entry.simplified,
         entry.traditional,
       ])
@@ -78,18 +75,18 @@ export const App: React.FunctionalComponent = () => {
   useEffect(
     function switchMode() {
       if (
-        tokenizerLoaded.fulfilled &&
+        tokenizer.value != null &&
         highlight != null &&
         dictionaryEntries.length === 0
       ) {
         const otherMode = mode === "simplified" ? "traditional" : "simplified";
 
-        if (lookup(highlight, otherMode).length > 0) {
+        if (lookup(highlight, otherMode)!.length > 0) {
           setMode(otherMode);
         }
       }
     },
-    [tokenizerLoaded.fulfilled, dictionaryEntries]
+    [tokenizer.value, dictionaryEntries]
   );
 
   useEffect(function handleHistory() {
@@ -112,7 +109,7 @@ export const App: React.FunctionalComponent = () => {
     <div class="app">
       <TokenTextarea
         value={input}
-        loading={!tokenizerLoaded.fulfilled}
+        loading={!tokenizer.fulfilled}
         tokens={tokenTokenizerTokens}
         highlight={highlight}
         onInput={(evt) => setInput(evt.currentTarget.value)}

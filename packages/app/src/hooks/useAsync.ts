@@ -1,11 +1,11 @@
 import { Inputs, useEffect, useRef, useState } from "preact/hooks";
 
-export interface PromiseHook<T> {
+export type PromiseHook<T> = {
   fulfilled: boolean;
   previousValue?: T;
   value?: T;
   err?: Error;
-}
+} 
 
 export function useAsync<T>(
   fn: () => Promise<T>,
