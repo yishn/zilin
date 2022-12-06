@@ -22,20 +22,11 @@ pub fn tokenize(input: &str) -> Vec<Token> {
   let mut offset = 0;
 
   let mut push_token = |word: &str| {
-    let entries_count = {
-      let mut result = CEDICT_DATA.get_simplified(word);
-
-      if result.map(|vec| vec.len() == 0).unwrap_or(true) {
-        result = CEDICT_DATA.get_traditional(word);
-      }
-
-      result.map(|vec| vec.len()).unwrap_or(0)
-    };
-
     tokens.push(Token {
       value: word.to_string(),
       offset,
-      has_entries: entries_count > 0,
+      has_entries: CEDICT_DATA.get_simplified(word).is_some()
+        || CEDICT_DATA.get_traditional(word).is_some(),
     });
 
     offset += word.chars().count();

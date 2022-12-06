@@ -80,15 +80,16 @@ impl<T> Trie<T> {
       .and_then(|(value, _)| value.as_mut())
   }
 
-  pub fn get_mut_or_insert_default(&mut self, key: &str) -> Option<&mut T>
-  where
-    T: Default,
-  {
+  pub fn get_mut_or_insert(
+    &mut self,
+    key: &str,
+    f: impl FnOnce() -> T,
+  ) -> Option<&mut T> {
     self
       .entry_mut(key.chars().peekable())
       .and_then(|(value, _)| {
         if value.is_none() {
-          *value = Some(T::default());
+          *value = Some(f());
         }
 
         value.as_mut()

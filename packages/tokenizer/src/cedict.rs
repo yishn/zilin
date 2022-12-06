@@ -71,11 +71,11 @@ impl Cedict {
 
         result
           .simplified
-          .get_mut_or_insert_default(simplified)
+          .get_mut_or_insert(simplified, || Vec::with_capacity(1))
           .map(|vec| vec.push(entry.clone()));
         result
           .traditional
-          .get_mut_or_insert_default(traditional)
+          .get_mut_or_insert(traditional, || Vec::with_capacity(1))
           .map(|vec| vec.push(entry));
       }
     }
