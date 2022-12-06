@@ -1,4 +1,3 @@
-use lazy_regex::regex_captures;
 use once_cell::sync::Lazy;
 use std::io::{BufRead, BufReader};
 
@@ -34,15 +33,37 @@ impl Cedict {
         continue;
       }
 
-      let captures =
-        regex_captures!(r#"^(\S+)\s(\S+)\s\[([^\]]+)\]\s/(.+)/"#, line);
+      let mut tokens = line.split_ascii_whitespace();
+      let traditional = tokens.next();
+      let simplified = tokens.next();
 
-      if let Some((_, traditional, simplified, pinyin, english)) = captures {
+      let pinyin = {
+        let mut result = String::new();
+
+        while let Some(token) = tokens.next() {
+          result += token;
+
+          if token.ends_with("]") {
+            break;
+          } else {
+            result.push(' ');
+          }
+        }
+
+        result
+      };
+      let pinyin = &pinyin[1..pinyin.len() - 1];
+
+      let english = tokens.collect::<Vec<_>>().join(" ");
+      let english = english.trim();
+      let english = &english[1..english.len() - 1];
+
+      if let (Some(traditional), Some(simplified)) = (traditional, simplified) {
         let entry = CedictEntry {
           traditional: traditional.to_string(),
           simplified: simplified.to_string(),
           pinyin: pinyin.to_string(),
-          english: english.to_string(),
+          english: (english).to_string(),
         };
 
         result

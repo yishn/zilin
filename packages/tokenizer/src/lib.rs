@@ -98,7 +98,7 @@ pub fn tokenize(input: &str) -> Vec<Token> {
           .unwrap_or(false)
     };
 
-    if is_chinese(ch) || ch.is_whitespace() {
+    if is_chinese(ch) || ch.is_ascii_whitespace() {
       push_token(&ch.to_string());
       continue;
     }
@@ -110,7 +110,7 @@ pub fn tokenize(input: &str) -> Vec<Token> {
     word.push(ch);
 
     while let Some(&(_, next_ch)) = chars.peek() {
-      if next_ch.is_whitespace() || is_chinese(next_ch) {
+      if next_ch.is_ascii_whitespace() || is_chinese(next_ch) {
         break;
       }
 
