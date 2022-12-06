@@ -2,6 +2,7 @@
   padding: 1rem calc(2rem - 0.5em);
   background: rgb(var(--dark-background-color));
   color: rgb(var(--light-text-color));
+  text-align: center;
 }
 
 .mode-switcher ul {
@@ -20,6 +21,10 @@
   color: inherit;
   text-decoration: none;
   transition: background-color 0.2s;
+}
+
+.mode-switcher a:hover, .mode-switcher a:focus {
+  background-color: rgba(var(--highlight-color-alt), .3);
 }
 
 .mode-switcher .current a {

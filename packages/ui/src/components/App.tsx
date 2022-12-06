@@ -11,6 +11,15 @@ function prettifyPinyin(pinyin: string): string {
   return pp(pinyin.replaceAll("u:", "ü"));
 }
 
+function prettifyExplanation(input: string): string {
+  return input
+    .replaceAll("/", " / ")
+    .replaceAll("|", " | ")
+    .replaceAll(",", ", ")
+    .replaceAll(":", ": ")
+    .replace(/\[([^\]]*)\]/g, (_, pinyin) => ` [${prettifyPinyin(pinyin)}]`);
+}
+
 export const App: React.FunctionalComponent = () => {
   const tokenizer = useAsync(async () => {
     return await loadTokenizer();
@@ -134,17 +143,25 @@ export const App: React.FunctionalComponent = () => {
         <DictionaryPane
           word={dictionaryEntries.length > 0 ? highlight : undefined}
           variants={wordVariants}
-          meanings={dictionaryEntries.map((entry) => ({
-            pinyin: prettifyPinyin(entry.pinyin),
-            explanation: entry.english
-              .replaceAll("/", " / ")
-              .replaceAll("|", " | ")
-              .replaceAll(",", ", ")
-              .replaceAll(":", ": ")
-              .replace(
-                /\[([^\]]*)\]/g,
-                (_, pinyin) => ` [${prettifyPinyin(pinyin)}]`
-              ),
+          meanings={
+            (highlight?.length ?? 0) <= 1
+              ? []
+              : dictionaryEntries.map((entry) => ({
+                  pinyin: prettifyPinyin(entry.pinyin),
+                  explanation: prettifyExplanation(entry.english),
+                }))
+          }
+          characters={[
+            ...(dictionaryEntries.length > 0 && highlight != null
+              ? highlight
+              : ""),
+          ].map((character) => ({
+            character,
+            meanings:
+              lookup(character, mode)?.map((entry) => ({
+                pinyin: prettifyPinyin(entry.pinyin),
+                explanation: prettifyExplanation(entry.english),
+              })) ?? [],
           }))}
         />
       </aside>

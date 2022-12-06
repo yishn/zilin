@@ -1,4 +1,6 @@
 .dictionary-pane {
+  display: flex;
+  flex-direction: column;
   background-color: rgb(var(--dark-background-color));
   color: rgb(var(--light-text-color));
   overflow: auto;
@@ -18,29 +20,31 @@
 }
 
 .dictionary-pane .word-info {
+  flex: 1;
   padding: 1rem 2rem;
 }
 
-.dictionary-pane .word-info .word {
+.dictionary-pane .word {
   font-size: 7rem;
   font-weight: normal;
   line-height: 1;
 }
-.dictionary-pane .word-info .word.small {
+
+.dictionary-pane .word.small {
   font-size: 4rem;
 }
 
-.dictionary-pane .word-info .variants {
+.dictionary-pane .variants {
   font-size: 2.5rem;
   display: flex;
   list-style: none;
 }
 
-.dictionary-pane .word-info .variants li:not(:last-child) {
+.dictionary-pane .variants li:not(:last-child) {
   margin-right: 0.8em;
 }
 
-.dictionary-pane .word-info .variants a {
+.dictionary-pane .variants a {
   border-bottom: 0;
 }
 
@@ -60,4 +64,18 @@
 
 .dictionary-pane .meanings .separator {
   opacity: 0.5;
+}
+
+.dictionary-pane .character-info {
+  position: relative;
+  display: flex;
+  flex: 1;
+  list-style: none;
+  background-color: rgb(var(--dark-background-color-lighter));
+  overflow: hidden;
+}
+
+.dictionary-pane .character-info > li {
+  padding: 2rem 2rem;
+  flex: 0 0 100%;
 }
