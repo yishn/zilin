@@ -78,6 +78,7 @@ export const TokenTextarea: React.FunctionComponent<TokenTextareaProps> = (
       {contentSize != null && (
         <textarea
           style={{ ...contentSize }}
+          autofocus
           value={props.value}
           onInput={props.onInput}
         />

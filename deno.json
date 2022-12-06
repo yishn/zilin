@@ -9,7 +9,7 @@
   "importMap": "./import_map.json",
   "tasks": {
     "build-wasm": "wasm-pack build --target web ./packages/tokenizer",
-    "build-ts": "deno bundle ./packages/app/src/main.tsx ./packages/app/dist/main.js",
+    "build-ts": "deno bundle ./packages/ui/src/main.tsx ./packages/ui/dist/main.js",
     "watch-ts": "deno task build-ts --watch",
     "build": "deno task build-wasm && deno task build-ts"
   }
