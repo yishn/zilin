@@ -18,6 +18,12 @@ impl<T> Trie<T> {
     }
   }
 
+  pub fn with_capacity(capacity: usize) -> Self {
+    Self {
+      data: HashMap::with_capacity(capacity),
+    }
+  }
+
   fn entry<I>(
     &self,
     mut chars: Peekable<I>,

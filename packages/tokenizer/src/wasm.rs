@@ -29,12 +29,11 @@ extern "C" {
   #[wasm_bindgen(typescript_type = "Entry")]
   pub type JsEntry;
 
+  #[wasm_bindgen(js_namespace = console)]
+  pub fn log(x: usize, y: usize);
+
   #[wasm_bindgen(js_name = "createToken")]
-  fn create_token(
-    value: &str,
-    offset: usize,
-    has_entries: bool,
-  ) -> JsToken;
+  fn create_token(value: &str, offset: usize, has_entries: bool) -> JsToken;
 
   #[wasm_bindgen(js_name = "createEntry")]
   fn create_entry(
@@ -47,11 +46,7 @@ extern "C" {
 
 impl<'a> From<&'a Token> for JsToken {
   fn from(value: &'a Token) -> Self {
-    create_token(
-      &value.value,
-      value.offset,
-      value.has_entries,
-    )
+    create_token(&value.value, value.offset, value.has_entries)
   }
 }
 

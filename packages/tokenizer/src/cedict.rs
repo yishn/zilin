@@ -24,7 +24,10 @@ impl Cedict {
   where
     I: Iterator<Item = String>,
   {
-    let mut result = Self::default();
+    let mut result = Self {
+      simplified: Trie::with_capacity(16_384),
+      traditional: Trie::with_capacity(16_384),
+    };
 
     for line in data {
       let line = line.trim();
