@@ -10,8 +10,6 @@ const TYPESCRIPT_TYPES: &'static str = r#"
   export interface Token {
     value: string;
     offset: number;
-    line: number;
-    column: number;
     hasEntries: boolean;
   }
 
@@ -35,8 +33,6 @@ extern "C" {
   fn create_token(
     value: &str,
     offset: usize,
-    line: usize,
-    column: usize,
     has_entries: bool,
   ) -> JsToken;
 
@@ -54,9 +50,7 @@ impl<'a> From<&'a Token> for JsToken {
     create_token(
       &value.value,
       value.offset,
-      value.line,
-      value.column,
-      value.entries.map(|vec| vec.len() > 0).unwrap_or(false),
+      value.has_entries,
     )
   }
 }

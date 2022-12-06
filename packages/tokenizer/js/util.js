@@ -1,9 +1,7 @@
-export function createToken(value, offset, line, column, hasEntries) {
+export function createToken(value, offset, hasEntries) {
   return {
     value,
     offset,
-    line,
-    column,
     hasEntries,
   };
 }

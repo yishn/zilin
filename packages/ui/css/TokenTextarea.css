@@ -13,7 +13,9 @@
   min-height: 100%;
   padding: 1.2rem;
   overflow: none;
+  font: inherit;
   white-space: pre-wrap;
+  word-break: break-all;
 }
 
 .token-textarea textarea {
@@ -21,7 +23,6 @@
   outline: none;
   resize: none;
   overflow: hidden;
-  font: inherit;
   color: inherit;
 }
 
