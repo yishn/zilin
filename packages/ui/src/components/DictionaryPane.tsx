@@ -1,4 +1,5 @@
 import * as React from "preact";
+import { useEffect, useRef, useState } from "preact/hooks";
 import { useAsync } from "../hooks/useAsync.ts";
 import { loadTokenizer } from "../wasm.ts";
 
@@ -50,6 +51,7 @@ export interface DictionaryPaneProps {
   meanings?: DictionaryMeaning[];
   characters?: {
     character: string;
+    variants?: string[];
     meanings: DictionaryMeaning[];
   }[];
 }
@@ -57,33 +59,111 @@ export interface DictionaryPaneProps {
 export const DictionaryPane: React.FunctionComponent<DictionaryPaneProps> = (
   props
 ) => {
+  const charactersContainerRef = useRef<HTMLOListElement>(null);
+
+  const [currentCharacterIndex, setCurrentCharacterIndex] = useState(0);
+
+  const oneCharacter = props.characters?.length === 1;
+
+  useEffect(
+    function resetCurrentCharacter() {
+      charactersContainerRef.current?.scrollTo({
+        left: 0,
+      });
+
+      setCurrentCharacterIndex(0);
+    },
+    [props.word]
+  );
+
   return (
     <section class="dictionary-pane">
-      <div class="word-info">
-        <h1 class={"word " + ((props.word?.length ?? 0) >= 4 ? "small " : "")}>
-          {props.word}
-        </h1>
+      {!oneCharacter && (
+        <div class="word-info">
+          <h1
+            class={"word " + ((props.word?.length ?? 0) >= 4 ? "small " : "")}
+          >
+            {props.word}
+          </h1>
 
-        <ul class="variants">
-          {props.variants?.map((variant) => (
-            <li>
-              <a href={"#" + variant}>{variant}</a>
+          <ul class="variants">
+            {props.variants?.map((variant) => (
+              <li>
+                <a href={"#" + variant}>{variant}</a>
+              </li>
+            ))}
+          </ul>
+
+          <MeaningsList meanings={props.meanings} />
+        </div>
+      )}
+
+      <div class="character-info">
+        <ol
+          class={
+            "navigation " +
+            ((props.characters?.length ?? 0) <= 1 ? "hide " : "")
+          }
+        >
+          {props.characters?.map((info, i) => (
+            <li class={i === currentCharacterIndex ? "current" : ""}>
+              <a
+                href="#"
+                title={info.character}
+                onClick={(evt) => {
+                  evt.preventDefault();
+
+                  const targetElement = charactersContainerRef.current
+                    ?.children[i] as HTMLElement | undefined;
+
+                  if (targetElement != null) {
+                    charactersContainerRef.current?.scrollTo({
+                      left: targetElement.offsetLeft,
+                      behavior: "smooth",
+                    });
+                  }
+                }}
+              >
+                {info.character}
+              </a>
             </li>
           ))}
-        </ul>
+        </ol>
 
-        <MeaningsList meanings={props.meanings} />
+        <ol
+          ref={charactersContainerRef}
+          class="characters"
+          onScroll={(evt) => {
+            const scrollPercentage =
+              evt.currentTarget.scrollLeft /
+              (evt.currentTarget.scrollWidth - evt.currentTarget.offsetWidth);
+
+            setCurrentCharacterIndex(
+              Math.round(
+                scrollPercentage * ((props.characters?.length ?? 1) - 1)
+              )
+            );
+          }}
+        >
+          {props.characters?.map((info) => (
+            <li>
+              <h1 class={"word " + (!oneCharacter ? "small " : "")}>
+                {info.character}
+              </h1>
+
+              <ul class="variants">
+                {info.variants?.map((variant) => (
+                  <li>
+                    <a href={"#" + variant}>{variant}</a>
+                  </li>
+                ))}
+              </ul>
+
+              <MeaningsList meanings={info.meanings} />
+            </li>
+          ))}
+        </ol>
       </div>
-
-      <ol class="character-info">
-        {props.characters?.map((info) => (
-          <li>
-            <h1 class="word small">{info.character}</h1>
-
-            <MeaningsList meanings={info.meanings} />
-          </li>
-        ))}
-      </ol>
     </section>
   );
 };

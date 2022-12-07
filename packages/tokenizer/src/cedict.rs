@@ -62,6 +62,10 @@ impl Cedict {
       let english = &english[1..english.len() - 1];
 
       if let (Some(traditional), Some(simplified)) = (traditional, simplified) {
+        if traditional.is_ascii() || simplified.is_ascii() {
+          continue;
+        }
+
         let entry = CedictEntry {
           traditional: traditional.to_string(),
           simplified: simplified.to_string(),

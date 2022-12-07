@@ -70,12 +70,58 @@
   position: relative;
   display: flex;
   flex: 1;
-  list-style: none;
   background-color: rgb(var(--dark-background-color-lighter));
-  overflow: hidden;
 }
 
-.dictionary-pane .character-info > li {
+.dictionary-pane .character-info .navigation {
+  display: flex;
+  position: absolute;
+  left: 50%;
+  padding: 0.5rem 2rem;
+  list-style: none;
+  font-size: 0.8em;
+  font-weight: bold;
+  transform: translateX(-50%);
+}
+
+.dictionary-pane .character-info .navigation.hide {
+  display: none;
+}
+
+.dictionary-pane .character-info .navigation > li a {
+  display: inline-block;
+  border: none;
+  border-radius: 50%;
+  margin: 0.25em;
+  width: 0.5em;
+  height: 0.5em;
+  background-color: currentColor;
+  text-indent: -9999em;
+  overflow: hidden;
+  transition: color 0.2s;
+}
+
+.dictionary-pane .character-info .navigation > li.current a {
+  color: rgb(var(--light-text-color));
+}
+
+.dictionary-pane .character-info .characters {
+  display: flex;
+  flex: 1;
+  list-style: none;
+  overflow: auto;
+}
+
+.dictionary-pane .character-info .characters::-webkit-scrollbar {
+  background-color: inherit;
+  height: 0.5rem;
+}
+
+.dictionary-pane .character-info .characters::-webkit-scrollbar-thumb {
+  background-color: rgb(var(--dark-background-color));
+}
+
+.dictionary-pane .character-info .characters > li {
   padding: 2rem 2rem;
   flex: 0 0 100%;
 }

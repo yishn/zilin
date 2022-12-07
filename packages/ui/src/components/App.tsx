@@ -6,9 +6,10 @@ import { useAsync } from "../hooks/useAsync.ts";
 import { TokenTextarea, Token } from "./TokenTextarea.tsx";
 import { DictionaryPane } from "./DictionaryPane.tsx";
 import { ModeSwitcher, ModeValue } from "./ModeSwitcher.tsx";
+import { Entry } from "../../../tokenizer/pkg/chinese_tokenizer.d.ts";
 
 function prettifyPinyin(pinyin: string): string {
-  return pp(pinyin.replaceAll("u:", "ü"));
+  return pp(pinyin.replaceAll("u:", "ü")).replace(/\s+/g, "");
 }
 
 function prettifyExplanation(input: string): string {
@@ -67,18 +68,20 @@ export const App: React.FunctionalComponent = () => {
     return [];
   }, [mode, tokenizer.fulfilled, highlight]);
 
-  const wordVariants = useMemo(() => {
+  function getVariants(character: string, entries: Entry[]): string[] {
     const set = new Set(
-      dictionaryEntries.flatMap((entry) => [
-        entry.simplified,
-        entry.traditional,
-      ])
+      entries.flatMap((entry) => [entry.simplified, entry.traditional])
     );
 
-    set.delete(highlight!);
+    set.delete(character);
 
     return [...set].sort();
-  }, [dictionaryEntries, highlight]);
+  }
+
+  const wordVariants = useMemo(
+    () => getVariants(highlight ?? "", dictionaryEntries),
+    [dictionaryEntries, highlight]
+  );
 
   useEffect(
     function switchMode() {
@@ -143,26 +146,27 @@ export const App: React.FunctionalComponent = () => {
         <DictionaryPane
           word={dictionaryEntries.length > 0 ? highlight : undefined}
           variants={wordVariants}
-          meanings={
-            (highlight?.length ?? 0) <= 1
-              ? []
-              : dictionaryEntries.map((entry) => ({
-                  pinyin: prettifyPinyin(entry.pinyin),
-                  explanation: prettifyExplanation(entry.english),
-                }))
-          }
+          meanings={dictionaryEntries.map((entry) => ({
+            pinyin: prettifyPinyin(entry.pinyin),
+            explanation: prettifyExplanation(entry.english),
+          }))}
           characters={[
             ...(dictionaryEntries.length > 0 && highlight != null
               ? highlight
               : ""),
-          ].map((character) => ({
-            character,
-            meanings:
-              lookup(character, mode)?.map((entry) => ({
-                pinyin: prettifyPinyin(entry.pinyin),
-                explanation: prettifyExplanation(entry.english),
-              })) ?? [],
-          }))}
+          ].map((character) => {
+            const entries = lookup(character, mode);
+
+            return {
+              character,
+              variants: getVariants(character, entries ?? []),
+              meanings:
+                entries?.map((entry) => ({
+                  pinyin: prettifyPinyin(entry.pinyin),
+                  explanation: prettifyExplanation(entry.english),
+                })) ?? [],
+            };
+          })}
         />
       </aside>
     </div>
