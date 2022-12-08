@@ -1,5 +1,6 @@
 import * as React from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
+import { parseDecomposition } from "../decompositionParser.ts";
 import { useAsync } from "../hooks/useAsync.ts";
 import { loadTokenizer } from "../wasm.ts";
 
@@ -51,8 +52,9 @@ export interface DictionaryPaneProps {
   meanings?: DictionaryMeaning[];
   characters?: {
     character: string;
-    variants?: string[];
+    variants: string[];
     meanings: DictionaryMeaning[];
+    decomposition?: string;
   }[];
 }
 
@@ -150,6 +152,15 @@ export const DictionaryPane: React.FunctionComponent<DictionaryPaneProps> = (
               <h1 class={"word " + (!oneCharacter ? "small " : "")}>
                 {info.character}
               </h1>
+
+              {info.decomposition && (
+                <p class="decomposition">
+                  {
+                    (parseDecomposition(info.character).then(console.log),
+                    info.decomposition)
+                  }
+                </p>
+              )}
 
               <ul class="variants">
                 {info.variants?.map((variant) => (

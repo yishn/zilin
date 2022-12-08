@@ -6,7 +6,7 @@ import { useAsync } from "../hooks/useAsync.ts";
 import { TokenTextarea, Token } from "./TokenTextarea.tsx";
 import { DictionaryPane } from "./DictionaryPane.tsx";
 import { ModeSwitcher, ModeValue } from "./ModeSwitcher.tsx";
-import { WordEntry } from "../../../tokenizer/pkg/chinese_tokenizer.d.ts";
+import type { WordEntry } from "../../../tokenizer/pkg/chinese_tokenizer.d.ts";
 
 function prettifyPinyin(pinyin: string): string {
   return pp(pinyin.replaceAll("u:", "ü")).replace(/\s+/g, "");
@@ -156,6 +156,7 @@ export const App: React.FunctionalComponent = () => {
               : ""),
           ].map((character) => {
             const entries = lookup(character, mode);
+            const characterInfo = tokenizer.value?.lookupCharacter(character);
 
             return {
               character,
@@ -165,6 +166,7 @@ export const App: React.FunctionalComponent = () => {
                   pinyin: prettifyPinyin(entry.pinyin),
                   explanation: prettifyExplanation(entry.english),
                 })) ?? [],
+              decomposition: characterInfo?.decomposition,
             };
           })}
         />
