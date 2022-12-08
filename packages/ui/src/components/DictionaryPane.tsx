@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import type { CharacterDecomposition } from "../../../tokenizer/pkg/chinese_tokenizer.d.ts";
 import { useAsync } from "../hooks/useAsync.ts";
 import { loadTokenizer } from "../wasm.ts";
+import { LinkifiedText } from "./LinkifiedText.tsx";
 
 interface DecompositionTreeProps {
   decomposition?: CharacterDecomposition;
@@ -73,31 +74,13 @@ interface MeaningsListProps {
 }
 
 const MeaningsList: React.FunctionComponent<MeaningsListProps> = (props) => {
-  const explanationTokens = useAsync(async () => {
-    const tokenizer = await loadTokenizer();
-
-    return props.meanings?.map((meaning) =>
-      tokenizer.tokenize(meaning.explanation)
-    );
-  }, props.meanings?.map((meaning) => meaning.explanation) ?? []);
-
   return (
     <ul class="meanings-list">
       {props.meanings?.map((entry, i) => (
         <li>
           <span class="pinyin">{entry.pinyin}</span>{" "}
           <span class="explanation">
-            {explanationTokens.value?.[i] == null
-              ? entry.explanation
-              : explanationTokens.value[i].map((token) => {
-                  if (token.hasEntries) {
-                    return <a href={"#" + token.value}>{token.value}</a>;
-                  } else if (token.value === "/" || token.value === "|") {
-                    return <span class="separator">{token.value}</span>;
-                  } else {
-                    return token.value;
-                  }
-                })}
+            <LinkifiedText value={entry.explanation} handleSeparators={true} />
           </span>
         </li>
       ))}
@@ -114,6 +97,7 @@ export interface DictionaryPaneProps {
     variants: string[];
     meanings: DictionaryMeaning[];
     decomposition?: CharacterDecomposition;
+    etymology?: string;
   }[];
 }
 
@@ -228,6 +212,13 @@ export const DictionaryPane: React.FunctionComponent<DictionaryPaneProps> = (
               />
 
               <MeaningsList meanings={info.meanings} />
+
+              {info.etymology != null && (
+                <p class="etymology">
+                  <strong>Etymology:</strong>{" "}
+                  <LinkifiedText value={info.etymology} />
+                </p>
+              )}
             </li>
           ))}
         </ol>

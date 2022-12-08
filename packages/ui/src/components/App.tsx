@@ -167,6 +167,10 @@ export const App: React.FunctionalComponent = () => {
                   explanation: prettifyExplanation(entry.english),
                 })) ?? [],
               decomposition: characterInfo?.decomposition,
+              etymology:
+                characterInfo?.etymology?.type !== "pictophonetic"
+                  ? characterInfo?.etymology?.hint
+                  : undefined,
             };
           })}
         />

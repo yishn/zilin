@@ -49,7 +49,9 @@
 }
 
 .dictionary-pane .meanings-list {
-  padding: 1.5rem 0;
+  padding-top: 1.5rem;
+  margin: 1.5rem;
+  margin-top: 0;
   color: rgba(var(--light-text-color), 0.7);
 }
 
@@ -135,8 +137,19 @@
   clear: both;
 }
 
+.dictionary-pane .character-info .etymology {
+  color: rgba(var(--light-text-color), 0.7);
+}
+
+.dictionary-pane .character-info .etymology strong {
+  font-size: 0.8em;
+  color: rgba(var(--light-text-color), 1);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
 .decomposition-tree {
-  border-radius: .2em;
+  border-radius: 0.2em;
   display: inline-flex;
   flex-wrap: nowrap;
   align-items: center;
@@ -147,7 +160,11 @@
 .decomposition-tree .decomposition-tree {
   margin: 0.2em;
   padding: 0.2em;
-  background-color: rgba(var(--dark-background-color), 0.5);
+  background-color: rgba(var(--dark-background-color), 0.4);
+}
+
+.decomposition-tree .decomposition-tree .decomposition-tree {
+  background-color: rgb(var(--dark-background-color));
 }
 
 .decomposition-tree > p {
@@ -157,7 +174,7 @@
 }
 
 .decomposition-tree > p.unknown {
-  opacity: .5;
+  opacity: 0.5;
 }
 
 .decomposition-tree a {
