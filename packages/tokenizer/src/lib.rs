@@ -1,8 +1,9 @@
 mod cedict;
+mod character;
 mod trie;
-mod wasm;
+pub mod wasm;
 
-use cedict::{CedictEntry, CEDICT_DATA};
+use cedict::{WordEntry, CEDICT_DATA};
 
 pub const CHINESE_PUNCTUATION: &'static [char] = &[
   '·', '×', '—', '‘', '’', '“', '”', '…', '、', '。', '《', '》', '『', '』',
@@ -116,11 +117,11 @@ pub fn tokenize(input: &str) -> Vec<Token> {
   tokens
 }
 
-pub fn lookup_simplified(word: &str) -> Option<&'static Vec<CedictEntry>> {
+pub fn lookup_simplified(word: &str) -> Option<&'static Vec<WordEntry>> {
   CEDICT_DATA.get_simplified(word)
 }
 
-pub fn lookup_traditional(word: &str) -> Option<&'static Vec<CedictEntry>> {
+pub fn lookup_traditional(word: &str) -> Option<&'static Vec<WordEntry>> {
   CEDICT_DATA.get_traditional(word)
 }
 

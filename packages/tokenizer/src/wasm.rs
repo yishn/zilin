@@ -1,8 +1,8 @@
 use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::{
-  cedict::{CedictEntry, CEDICT_DATA},
-  lookup_simplified, lookup_traditional, tokenize, Token,
+  cedict::WordEntry, character::CHARACTER_DATA, lookup_simplified,
+  lookup_traditional, tokenize, Token,
 };
 
 #[wasm_bindgen(typescript_custom_section)]
@@ -13,11 +13,27 @@ const TYPESCRIPT_TYPES: &'static str = r#"
     hasEntries: boolean;
   }
 
-  export interface Entry {
+  export interface WordEntry {
     traditional: string;
     simplified: string;
     pinyin: string;
     english: string;
+  }
+
+  export interface CharacterEntry {
+    character: string;
+    decomposition: string;
+    etymology?: 
+      | {
+        type: "ideographic" | "pictographic";
+        hint: string;
+      } 
+      | {
+        type: "pictophonetic";
+        hint?: string;
+        phonetic?: string;
+        semantic?: string;
+      };
   }
 "#;
 
@@ -26,8 +42,11 @@ extern "C" {
   #[wasm_bindgen(typescript_type = "Token")]
   pub type JsToken;
 
-  #[wasm_bindgen(typescript_type = "Entry")]
-  pub type JsEntry;
+  #[wasm_bindgen(typescript_type = "WordEntry")]
+  pub type JsWordEntry;
+
+  #[wasm_bindgen(typescript_type = "CharacterEntry")]
+  pub type JsCharacterEntry;
 
   #[wasm_bindgen(js_namespace = console)]
   pub fn log(x: usize, y: usize);
@@ -35,13 +54,16 @@ extern "C" {
   #[wasm_bindgen(js_name = "createToken")]
   fn create_token(value: &str, offset: usize, has_entries: bool) -> JsToken;
 
-  #[wasm_bindgen(js_name = "createEntry")]
-  fn create_entry(
+  #[wasm_bindgen(js_name = "createWordEntry")]
+  fn create_word_entry(
     traditional: &str,
     simplified: &str,
     pinyin: &str,
     english: &str,
-  ) -> JsEntry;
+  ) -> JsWordEntry;
+
+  #[wasm_bindgen(js_name = "createCharacterEntry")]
+  fn create_character_entry(data: &str) -> JsCharacterEntry;
 }
 
 impl<'a> From<&'a Token> for JsToken {
@@ -50,9 +72,9 @@ impl<'a> From<&'a Token> for JsToken {
   }
 }
 
-impl<'a> From<&'a CedictEntry> for JsEntry {
-  fn from(value: &'a CedictEntry) -> Self {
-    create_entry(
+impl<'a> From<&'a WordEntry> for JsWordEntry {
+  fn from(value: &'a WordEntry) -> Self {
+    create_word_entry(
       &value.traditional,
       &value.simplified,
       &value.pinyin,
@@ -69,20 +91,20 @@ pub fn _tokenize(input: &str) -> Vec<JsToken> {
 }
 
 #[wasm_bindgen(js_name = "lookupSimplified")]
-pub fn _lookup_simplified(word: &str) -> Vec<JsEntry> {
+pub fn _lookup_simplified(word: &str) -> Vec<JsWordEntry> {
   lookup_simplified(word)
-    .map(|entries| entries.iter().map(JsEntry::from).collect())
+    .map(|entries| entries.iter().map(JsWordEntry::from).collect())
     .unwrap_or_default()
 }
 
 #[wasm_bindgen(js_name = "lookupTraditional")]
-pub fn _lookup_traditional(word: &str) -> Vec<JsEntry> {
+pub fn _lookup_traditional(word: &str) -> Vec<JsWordEntry> {
   lookup_traditional(word)
-    .map(|entries| entries.iter().map(JsEntry::from).collect())
+    .map(|entries| entries.iter().map(JsWordEntry::from).collect())
     .unwrap_or_default()
 }
 
-#[wasm_bindgen(start)]
-pub fn _main() {
-  let _ = &*CEDICT_DATA;
+#[wasm_bindgen(js_name = "lookupCharacter")]
+pub fn _lookup_character(character: char) -> Option<JsCharacterEntry> {
+  CHARACTER_DATA.get(character).map(create_character_entry)
 }

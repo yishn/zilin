@@ -13,17 +13,14 @@ pub static CEDICT_DATA: Lazy<Cedict> = Lazy::new(|| {
   Cedict::new(buf_reader.lines().map(|line| line.unwrap()))
 });
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 pub struct Cedict {
-  simplified: Trie<Vec<CedictEntry>>,
-  traditional: Trie<Vec<CedictEntry>>,
+  simplified: Trie<Vec<WordEntry>>,
+  traditional: Trie<Vec<WordEntry>>,
 }
 
 impl Cedict {
-  pub fn new<'a, I>(data: I) -> Self
-  where
-    I: Iterator<Item = String>,
-  {
+  pub fn new(data: impl Iterator<Item = String>) -> Self {
     let mut result = Self {
       simplified: Trie::with_capacity(16_384),
       traditional: Trie::with_capacity(16_384),
@@ -66,7 +63,7 @@ impl Cedict {
           continue;
         }
 
-        let entry = CedictEntry {
+        let entry = WordEntry {
           traditional: traditional.to_string(),
           simplified: simplified.to_string(),
           pinyin: pinyin.to_string(),
@@ -87,31 +84,31 @@ impl Cedict {
     result
   }
 
-  pub fn get_simplified(&self, word: &str) -> Option<&Vec<CedictEntry>> {
+  pub fn get_simplified(&self, word: &str) -> Option<&Vec<WordEntry>> {
     self.simplified.get(word)
   }
 
-  pub fn get_traditional(&self, word: &str) -> Option<&Vec<CedictEntry>> {
+  pub fn get_traditional(&self, word: &str) -> Option<&Vec<WordEntry>> {
     self.traditional.get(word)
   }
 
   pub fn get_simplified_prefix<'a>(
     &'a self,
     word: &str,
-  ) -> impl Iterator<Item = &'a CedictEntry> + 'a {
+  ) -> impl Iterator<Item = &'a WordEntry> + 'a {
     self.simplified.get_prefix(word).flat_map(|vec| vec.iter())
   }
 
   pub fn get_traditional_prefix<'a>(
     &'a self,
     word: &str,
-  ) -> impl Iterator<Item = &'a CedictEntry> + 'a {
+  ) -> impl Iterator<Item = &'a WordEntry> + 'a {
     self.traditional.get_prefix(word).flat_map(|vec| vec.iter())
   }
 }
 
 #[derive(Debug, Default, Clone)]
-pub struct CedictEntry {
+pub struct WordEntry {
   pub traditional: String,
   pub simplified: String,
   pub pinyin: String,

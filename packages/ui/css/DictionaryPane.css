@@ -21,7 +21,7 @@
 
 .dictionary-pane .word-info {
   flex: 1;
-  padding: 1rem 2rem;
+  padding: 2rem;
 }
 
 .dictionary-pane .word {
@@ -122,6 +122,6 @@
 }
 
 .dictionary-pane .character-info .characters > li {
-  padding: 2rem 2rem;
+  padding: 2rem;
   flex: 0 0 100%;
 }

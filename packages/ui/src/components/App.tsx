@@ -6,7 +6,7 @@ import { useAsync } from "../hooks/useAsync.ts";
 import { TokenTextarea, Token } from "./TokenTextarea.tsx";
 import { DictionaryPane } from "./DictionaryPane.tsx";
 import { ModeSwitcher, ModeValue } from "./ModeSwitcher.tsx";
-import { Entry } from "../../../tokenizer/pkg/chinese_tokenizer.d.ts";
+import { WordEntry } from "../../../tokenizer/pkg/chinese_tokenizer.d.ts";
 
 function prettifyPinyin(pinyin: string): string {
   return pp(pinyin.replaceAll("u:", "ü")).replace(/\s+/g, "");
@@ -68,7 +68,7 @@ export const App: React.FunctionalComponent = () => {
     return [];
   }, [mode, tokenizer.fulfilled, highlight]);
 
-  function getVariants(character: string, entries: Entry[]): string[] {
+  function getVariants(character: string, entries: WordEntry[]): string[] {
     const set = new Set(
       entries.flatMap((entry) => [entry.simplified, entry.traditional])
     );
