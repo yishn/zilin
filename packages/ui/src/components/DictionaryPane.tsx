@@ -1,7 +1,67 @@
 import * as React from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
+import type { CharacterDecomposition } from "../../../tokenizer/pkg/chinese_tokenizer.d.ts";
 import { useAsync } from "../hooks/useAsync.ts";
 import { loadTokenizer } from "../wasm.ts";
+
+interface DecompositionTreeProps {
+  decomposition?: CharacterDecomposition;
+  maxDepth?: number;
+}
+
+const DecompositionTree: React.FunctionComponent<DecompositionTreeProps> = (
+  props
+) => {
+  const decomposition = props.decomposition;
+  const maxDepth = props.maxDepth ?? Infinity;
+
+  const tokenizer = useAsync(() => loadTokenizer(), []);
+
+  const hasWordEntry = (word: string) =>
+    (tokenizer.value?.lookupSimplified(word).length ?? 0) > 0 ||
+    (tokenizer.value?.lookupTraditional(word).length ?? 0) > 0;
+
+  return maxDepth < 0 ? null : (
+    <div class="decomposition-tree">
+      {decomposition == null ? (
+        <p class="unknown">?</p>
+      ) : typeof decomposition === "string" ? (
+        <p class="radical">
+          {hasWordEntry(decomposition) ? (
+            <a href={"#" + decomposition}>{decomposition}</a>
+          ) : (
+            decomposition
+          )}
+        </p>
+      ) : (
+        <>
+          <p class={decomposition.value == null ? "unknown" : ""}>
+            {decomposition.value == null ? (
+              "?"
+            ) : hasWordEntry(decomposition.value) ? (
+              <a href={"#" + decomposition.value}>{decomposition.value}</a>
+            ) : (
+              decomposition.value
+            )}
+          </p>
+
+          {decomposition.parts.some((part) => part != null) && (
+            <ol>
+              {decomposition.parts.map((part) => (
+                <li>
+                  <DecompositionTree
+                    decomposition={part}
+                    maxDepth={maxDepth - 1}
+                  />
+                </li>
+              ))}
+            </ol>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
 
 export interface DictionaryMeaning {
   pinyin: string;
@@ -22,7 +82,7 @@ const MeaningsList: React.FunctionComponent<MeaningsListProps> = (props) => {
   }, props.meanings?.map((meaning) => meaning.explanation) ?? []);
 
   return (
-    <ul class="meanings">
+    <ul class="meanings-list">
       {props.meanings?.map((entry, i) => (
         <li>
           <span class="pinyin">{entry.pinyin}</span>{" "}
@@ -53,7 +113,7 @@ export interface DictionaryPaneProps {
     character: string;
     variants: string[];
     meanings: DictionaryMeaning[];
-    decomposition?: string;
+    decomposition?: CharacterDecomposition;
   }[];
 }
 
@@ -63,17 +123,6 @@ export const DictionaryPane: React.FunctionComponent<DictionaryPaneProps> = (
   const charactersContainerRef = useRef<HTMLOListElement>(null);
 
   const [currentCharacterIndex, setCurrentCharacterIndex] = useState(0);
-  const characterDecompositions = useAsync(async () => {
-    const tokenizer = await loadTokenizer();
-
-    const result = props.characters?.map((info) =>
-      tokenizer.decompose(info.character)
-    );
-
-    console.log(result);
-
-    return result;
-  }, [props.word]);
 
   const oneCharacter = props.characters?.length === 1;
 
@@ -159,21 +208,24 @@ export const DictionaryPane: React.FunctionComponent<DictionaryPaneProps> = (
         >
           {props.characters?.map((info) => (
             <li>
-              <h1 class={"word " + (!oneCharacter ? "small " : "")}>
-                {info.character}
-              </h1>
+              <header>
+                <h1 class={"word " + (!oneCharacter ? "small " : "")}>
+                  {info.character}
+                </h1>
 
-              {info.decomposition && (
-                <p class="decomposition">{info.decomposition}</p>
-              )}
+                <ul class="variants">
+                  {info.variants?.map((variant) => (
+                    <li>
+                      <a href={"#" + variant}>{variant}</a>
+                    </li>
+                  ))}
+                </ul>
+              </header>
 
-              <ul class="variants">
-                {info.variants?.map((variant) => (
-                  <li>
-                    <a href={"#" + variant}>{variant}</a>
-                  </li>
-                ))}
-              </ul>
+              <DecompositionTree
+                decomposition={info.decomposition}
+                maxDepth={2}
+              />
 
               <MeaningsList meanings={info.meanings} />
             </li>

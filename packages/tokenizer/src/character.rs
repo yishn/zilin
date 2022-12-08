@@ -25,6 +25,8 @@ pub struct CharacterEtymology {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CharacterEntry {
   pub character: char,
+  pub definition: Option<String>,
+  pub pinyin: Vec<String>,
   pub decomposition: String,
   pub etymology: Option<CharacterEtymology>,
 }

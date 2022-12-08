@@ -1,9 +1,8 @@
 use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::{
-  cedict::WordEntry, character::CHARACTER_DATA, decompose, lookup_character,
-  lookup_simplified, lookup_traditional, tokenize, CharacterDecomposition,
-  Token,
+  cedict::WordEntry, decompose, lookup_character, lookup_simplified,
+  lookup_traditional, tokenize, CharacterDecomposition, Token,
 };
 
 #[wasm_bindgen(typescript_custom_section)]
@@ -23,7 +22,9 @@ const TYPESCRIPT_TYPES: &'static str = r#"
 
   export interface CharacterEntry {
     character: string;
-    decomposition: string;
+    definition?: string;
+    pinyin: string[];
+    decomposition: CharacterDecomposition;
     etymology?: 
       | {
         type: "ideographic" | "pictographic";
@@ -76,7 +77,10 @@ extern "C" {
   ) -> JsWordEntry;
 
   #[wasm_bindgen(js_name = "createCharacterEntry")]
-  fn create_character_entry(data: &str) -> JsCharacterEntry;
+  fn create_character_entry(
+    data: &str,
+    decomposition: JsCharacterDecomposition,
+  ) -> JsCharacterEntry;
 
   #[wasm_bindgen(js_name = "createDecomposition")]
   fn create_decomposition(
@@ -146,8 +150,12 @@ pub fn _lookup_traditional(word: &str) -> Vec<JsWordEntry> {
 
 #[wasm_bindgen(js_name = "lookupCharacter")]
 pub fn _lookup_character(character: char) -> Option<JsCharacterEntry> {
-  lookup_character(character)
-    .map(|entry| create_character_entry(&serde_json::to_string(entry).unwrap()))
+  lookup_character(character).map(|entry| {
+    create_character_entry(
+      &serde_json::to_string(entry).unwrap(),
+      _decompose(character),
+    )
+  })
 }
 
 #[wasm_bindgen(js_name = "decompose")]
