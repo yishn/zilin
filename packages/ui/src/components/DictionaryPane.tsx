@@ -1,6 +1,5 @@
 import * as React from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
-import { parseDecomposition } from "../decompositionParser.ts";
 import { useAsync } from "../hooks/useAsync.ts";
 import { loadTokenizer } from "../wasm.ts";
 
@@ -64,6 +63,17 @@ export const DictionaryPane: React.FunctionComponent<DictionaryPaneProps> = (
   const charactersContainerRef = useRef<HTMLOListElement>(null);
 
   const [currentCharacterIndex, setCurrentCharacterIndex] = useState(0);
+  const characterDecompositions = useAsync(async () => {
+    const tokenizer = await loadTokenizer();
+
+    const result = props.characters?.map((info) =>
+      tokenizer.decompose(info.character)
+    );
+
+    console.log(result);
+
+    return result;
+  }, [props.word]);
 
   const oneCharacter = props.characters?.length === 1;
 
@@ -154,12 +164,7 @@ export const DictionaryPane: React.FunctionComponent<DictionaryPaneProps> = (
               </h1>
 
               {info.decomposition && (
-                <p class="decomposition">
-                  {
-                    (parseDecomposition(info.character).then(console.log),
-                    info.decomposition)
-                  }
-                </p>
+                <p class="decomposition">{info.decomposition}</p>
               )}
 
               <ul class="variants">

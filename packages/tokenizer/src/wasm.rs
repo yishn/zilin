@@ -1,8 +1,9 @@
 use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::{
-  cedict::WordEntry, character::CHARACTER_DATA, lookup_simplified,
-  lookup_traditional, tokenize, Token,
+  cedict::WordEntry, character::CHARACTER_DATA, decompose, lookup_character,
+  lookup_simplified, lookup_traditional, tokenize, CharacterDecomposition,
+  Token,
 };
 
 #[wasm_bindgen(typescript_custom_section)]
@@ -35,6 +36,15 @@ const TYPESCRIPT_TYPES: &'static str = r#"
         semantic?: string;
       };
   }
+
+  export type CharacterDecomposition =
+    | null
+    | string
+    | {
+      type: string;
+      value?: string;
+      parts: CharacterDecomposition[];
+    };
 "#;
 
 #[wasm_bindgen(module = "/js/util.js")]
@@ -47,6 +57,9 @@ extern "C" {
 
   #[wasm_bindgen(typescript_type = "CharacterEntry")]
   pub type JsCharacterEntry;
+
+  #[wasm_bindgen(typescript_type = "CharacterDecomposition")]
+  pub type JsCharacterDecomposition;
 
   #[wasm_bindgen(js_namespace = console)]
   pub fn log(x: usize, y: usize);
@@ -64,6 +77,13 @@ extern "C" {
 
   #[wasm_bindgen(js_name = "createCharacterEntry")]
   fn create_character_entry(data: &str) -> JsCharacterEntry;
+
+  #[wasm_bindgen(js_name = "createDecomposition")]
+  fn create_decomposition(
+    value: Option<char>,
+    ty: Option<char>,
+    parts: Vec<JsCharacterDecomposition>,
+  ) -> JsCharacterDecomposition;
 }
 
 impl<'a> From<&'a Token> for JsToken {
@@ -80,6 +100,26 @@ impl<'a> From<&'a WordEntry> for JsWordEntry {
       &value.pinyin,
       &value.english,
     )
+  }
+}
+
+impl<'a> From<&'a CharacterDecomposition> for JsCharacterDecomposition {
+  fn from(value: &'a CharacterDecomposition) -> Self {
+    match value {
+      CharacterDecomposition::Unknown => {
+        create_decomposition(None, None, vec![])
+      }
+      CharacterDecomposition::Radical(value) => {
+        create_decomposition(Some(*value), None, vec![])
+      }
+      CharacterDecomposition::Parts { ty, value, parts } => {
+        create_decomposition(
+          *value,
+          Some(*ty),
+          parts.iter().map(JsCharacterDecomposition::from).collect(),
+        )
+      }
+    }
   }
 }
 
@@ -106,5 +146,11 @@ pub fn _lookup_traditional(word: &str) -> Vec<JsWordEntry> {
 
 #[wasm_bindgen(js_name = "lookupCharacter")]
 pub fn _lookup_character(character: char) -> Option<JsCharacterEntry> {
-  CHARACTER_DATA.get(character).map(create_character_entry)
+  lookup_character(character)
+    .map(|entry| create_character_entry(&serde_json::to_string(entry).unwrap()))
+}
+
+#[wasm_bindgen(js_name = "decompose")]
+pub fn _decompose(character: char) -> JsCharacterDecomposition {
+  (&decompose(character)).into()
 }

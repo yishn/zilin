@@ -1,6 +1,6 @@
 use once_cell::sync::Lazy;
 use rustc_hash::FxHashMap as HashMap;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::io::{BufRead, BufReader};
 
 pub static CHARACTER_DATA_GZ: &'static [u8] =
@@ -13,14 +13,25 @@ pub static CHARACTER_DATA: Lazy<Dictionary> = Lazy::new(|| {
   Dictionary::new(buf_reader.lines().map(|line| line.unwrap()))
 });
 
-#[derive(Deserialize)]
-struct CharacterEntry {
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CharacterEtymology {
+  #[serde(rename = "type")]
+  pub ty: String,
+  pub hint: Option<String>,
+  pub phonetic: Option<String>,
+  pub semantic: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CharacterEntry {
   pub character: char,
+  pub decomposition: String,
+  pub etymology: Option<CharacterEtymology>,
 }
 
 #[derive(Debug, Clone)]
 pub struct Dictionary {
-  data: HashMap<char, String>,
+  data: HashMap<char, CharacterEntry>,
 }
 
 impl Dictionary {
@@ -30,14 +41,14 @@ impl Dictionary {
     for line in data {
       let entry = serde_json::from_str::<CharacterEntry>(&line).unwrap();
 
-      map.insert(entry.character, line);
+      map.insert(entry.character, entry);
     }
 
     Self { data: map }
   }
 
-  pub fn get(&self, character: char) -> Option<&str> {
-    self.data.get(&character).map(|x| &**x)
+  pub fn get(&self, character: char) -> Option<&CharacterEntry> {
+    self.data.get(&character)
   }
 }
 

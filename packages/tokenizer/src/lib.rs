@@ -4,6 +4,7 @@ mod trie;
 pub mod wasm;
 
 use cedict::{WordEntry, CEDICT_DATA};
+use character::{CharacterEntry, CHARACTER_DATA};
 
 pub const CHINESE_PUNCTUATION: &'static [char] = &[
   '·', '×', '—', '‘', '’', '“', '”', '…', '、', '。', '《', '》', '『', '』',
@@ -123,6 +124,71 @@ pub fn lookup_simplified(word: &str) -> Option<&'static Vec<WordEntry>> {
 
 pub fn lookup_traditional(word: &str) -> Option<&'static Vec<WordEntry>> {
   CEDICT_DATA.get_traditional(word)
+}
+
+pub fn lookup_character(character: char) -> Option<&'static CharacterEntry> {
+  CHARACTER_DATA.get(character)
+}
+
+#[derive(Debug, Clone)]
+pub enum CharacterDecomposition {
+  Unknown,
+  Radical(char),
+  Parts {
+    ty: char,
+    value: Option<char>,
+    parts: Vec<CharacterDecomposition>,
+  },
+}
+
+pub fn decompose(character: char) -> CharacterDecomposition {
+  const BINARY_DECOMPOSITION_TYPES: &[char] =
+    &['⿰', '⿱', '⿴', '⿵', '⿶', '⿷', '⿸', '⿹', '⿺', '⿻'];
+  const TRINARY_DECOMPOSITION_TYPES: &[char] = &['⿲', '⿳'];
+
+  fn inner(
+    value: Option<char>,
+    tokens: &mut dyn Iterator<Item = char>,
+  ) -> CharacterDecomposition {
+    if let Some(token) = tokens.next() {
+      if token == '？' {
+        return CharacterDecomposition::Unknown;
+      } else if BINARY_DECOMPOSITION_TYPES.contains(&token)
+        || TRINARY_DECOMPOSITION_TYPES.contains(&token)
+      {
+        return CharacterDecomposition::Parts {
+          ty: token,
+          value,
+          parts: if TRINARY_DECOMPOSITION_TYPES.contains(&token) {
+            vec![
+              inner(None, tokens),
+              inner(None, tokens),
+              inner(None, tokens),
+            ]
+          } else {
+            vec![inner(None, tokens), inner(None, tokens)]
+          },
+        };
+      } else {
+        return match decompose(token) {
+          CharacterDecomposition::Unknown => {
+            CharacterDecomposition::Radical(token)
+          }
+          decomposition => decomposition,
+        };
+      }
+    }
+
+    CharacterDecomposition::Unknown
+  }
+
+  inner(
+    Some(character),
+    &mut CHARACTER_DATA
+      .get(character)
+      .into_iter()
+      .flat_map(|entry| entry.decomposition.chars()),
+  )
 }
 
 #[cfg(test)]
