@@ -4,7 +4,10 @@ mod trie;
 pub mod wasm;
 
 use cedict::{WordEntry, CEDICT_DATA};
-use character::{CharacterEntry, CHARACTER_DATA};
+use character::{
+  CharacterEntry, BINARY_DECOMPOSITION_TYPES, CHARACTER_DATA,
+  TRINARY_DECOMPOSITION_TYPES,
+};
 
 pub const CHINESE_PUNCTUATION: &'static [char] = &[
   '·', '×', '—', '‘', '’', '“', '”', '…', '、', '。', '《', '》', '『', '』',
@@ -142,10 +145,6 @@ pub enum CharacterDecomposition {
 }
 
 pub fn decompose(character: char) -> CharacterDecomposition {
-  const BINARY_DECOMPOSITION_TYPES: &[char] =
-    &['⿰', '⿱', '⿴', '⿵', '⿶', '⿷', '⿸', '⿹', '⿺', '⿻'];
-  const TRINARY_DECOMPOSITION_TYPES: &[char] = &['⿲', '⿳'];
-
   fn inner(
     value: Option<char>,
     tokens: &mut dyn Iterator<Item = char>,

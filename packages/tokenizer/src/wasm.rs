@@ -36,6 +36,7 @@ const TYPESCRIPT_TYPES: &'static str = r#"
         phonetic?: string;
         semantic?: string;
       };
+    strokes: number;
   }
 
   export type CharacterDecomposition =
