@@ -2,8 +2,9 @@ use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::{
   cedict::WordEntry, character::CharacterEntry, decompose, lookup_character,
-  lookup_characters_including_component, lookup_simplified,
+  lookup_simplified, lookup_simplified_characters_including_component,
   lookup_simplified_including_subslice, lookup_traditional,
+  lookup_traditional_characters_including_component,
   lookup_traditional_with_subslice, tokenize, CharacterDecomposition, Token,
 };
 
@@ -46,7 +47,7 @@ const TYPESCRIPT_TYPES: &'static str = r#"
     | {
       type: string;
       value?: string;
-      parts: CharacterDecomposition[];
+      components: CharacterDecomposition[];
     };
 "#;
 
@@ -121,7 +122,7 @@ impl<'a> From<&'a CharacterDecomposition> for JsCharacterDecomposition {
       CharacterDecomposition::Radical(value) => {
         create_decomposition(Some(*value), None, vec![])
       }
-      CharacterDecomposition::Parts { ty, value, parts } => {
+      CharacterDecomposition::Components { ty, value, components: parts } => {
         create_decomposition(
           *value,
           Some(*ty),
@@ -174,11 +175,21 @@ pub fn _lookup_character(character: char) -> Option<JsCharacterEntry> {
   lookup_character(character).map(JsCharacterEntry::from)
 }
 
-#[wasm_bindgen(js_name = "lookupCharactersIncludingComponent")]
-pub fn _lookup_characters_including_component(
+#[wasm_bindgen(js_name = "lookupSimplifiedCharactersIncludingComponent")]
+pub fn _lookup_simplified_characters_including_component(
   component: char,
 ) -> Vec<JsCharacterEntry> {
-  lookup_characters_including_component(component)
+  lookup_simplified_characters_including_component(component)
+    .into_iter()
+    .map(JsCharacterEntry::from)
+    .collect()
+}
+
+#[wasm_bindgen(js_name = "lookupTraditionalCharactersIncludingComponent")]
+pub fn _lookup_traditional_characters_including_component(
+  component: char,
+) -> Vec<JsCharacterEntry> {
+  lookup_traditional_characters_including_component(component)
     .into_iter()
     .map(JsCharacterEntry::from)
     .collect()

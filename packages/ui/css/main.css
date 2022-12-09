@@ -2,6 +2,7 @@
 @import url("./TokenTextarea.css");
 @import url("./ModeSwitcher.css");
 @import url("./DictionaryPane.css");
+@import url("./WordList.css");
 
 * {
   margin: 0;

@@ -144,12 +144,13 @@ fn lookup_words_including_subslice(
         .flatten(),
     )
     .filter(|entry| {
-      if simplified {
+      let word = if simplified {
         &entry.simplified
       } else {
         &entry.traditional
-      }
-      .contains(slice)
+      };
+
+      word != slice && word.contains(slice)
     })
     .collect::<Vec<_>>();
 
@@ -166,7 +167,9 @@ fn lookup_words_including_subslice(
   result
 }
 
-pub fn lookup_simplified_including_subslice(slice: &str) -> Vec<&'static WordEntry> {
+pub fn lookup_simplified_including_subslice(
+  slice: &str,
+) -> Vec<&'static WordEntry> {
   lookup_words_including_subslice(slice, true)
 }
 
@@ -180,32 +183,87 @@ pub fn lookup_character(character: char) -> Option<&'static CharacterEntry> {
   CHARACTER_DATA.get(character)
 }
 
-pub fn lookup_characters_including_component(
+fn lookup_characters_including_component(
   component: char,
+  simplified: bool,
 ) -> Vec<&'static CharacterEntry> {
   let mut result = CHARACTER_DATA
     .iter()
-    .filter(|entry| entry.decomposition.chars().any(|ch| ch == component))
+    .filter(|entry| entry.character != component)
+    .filter(|entry| {
+      decompose(entry.character)
+        .iter_parts()
+        .any(|ch| ch == component)
+    })
+    .filter(|entry| {
+      let word = entry.character.to_string();
+
+      if simplified {
+        lookup_simplified(&word)
+      } else {
+        lookup_traditional(&word)
+      }
+      .is_some()
+    })
     .collect::<Vec<_>>();
 
-  result.sort_unstable_by_key(|entry| entry.strokes);
+  result.sort_by_key(|entry| entry.strokes);
   result
+}
+
+pub fn lookup_simplified_characters_including_component(
+  component: char,
+) -> Vec<&'static CharacterEntry> {
+  lookup_characters_including_component(component, true)
+}
+
+pub fn lookup_traditional_characters_including_component(
+  component: char,
+) -> Vec<&'static CharacterEntry> {
+  lookup_characters_including_component(component, false)
 }
 
 #[derive(Debug, Clone)]
 pub enum CharacterDecomposition {
   Unknown,
   Radical(char),
-  Parts {
+  Components {
     ty: char,
     value: Option<char>,
-    parts: Vec<CharacterDecomposition>,
+    components: Vec<CharacterDecomposition>,
   },
 }
 
 impl Default for CharacterDecomposition {
   fn default() -> Self {
     Self::Unknown
+  }
+}
+
+impl CharacterDecomposition {
+  pub fn iter_parts(&self) -> impl Iterator<Item = char> + '_ {
+    match self {
+      &CharacterDecomposition::Radical(ch) => Some(ch),
+      _ => None,
+    }
+    .into_iter()
+    .chain(
+      match self {
+        CharacterDecomposition::Components {
+          value,
+          components: parts,
+          ..
+        } => Some(value.clone().into_iter().chain(parts.iter().flat_map(
+          |decomposition| {
+            Box::new(decomposition.iter_parts())
+              as Box<dyn Iterator<Item = char>>
+          },
+        ))),
+        _ => None,
+      }
+      .into_iter()
+      .flatten(),
+    )
   }
 }
 
@@ -220,10 +278,10 @@ pub fn decompose(character: char) -> CharacterDecomposition {
       } else if BINARY_DECOMPOSITION_TYPES.contains(&token)
         || TRINARY_DECOMPOSITION_TYPES.contains(&token)
       {
-        return CharacterDecomposition::Parts {
+        return CharacterDecomposition::Components {
           ty: token,
           value,
-          parts: if TRINARY_DECOMPOSITION_TYPES.contains(&token) {
+          components: if TRINARY_DECOMPOSITION_TYPES.contains(&token) {
             vec![
               inner(None, tokens),
               inner(None, tokens),

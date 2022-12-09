@@ -19,12 +19,12 @@ export function createCharacterEntry(data) {
   return JSON.parse(data);
 }
 
-export function createDecomposition(value, type, parts) {
+export function createDecomposition(value, type, components) {
   return type != null
     ? {
         value,
         type,
-        parts,
+        components,
       }
     : value != null
     ? value

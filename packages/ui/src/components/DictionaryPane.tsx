@@ -4,6 +4,7 @@ import type { CharacterDecomposition } from "../../../tokenizer/pkg/chinese_toke
 import { useAsync } from "../hooks/useAsync.ts";
 import { loadTokenizer } from "../tokenizer.ts";
 import { LinkifiedText } from "./LinkifiedText.tsx";
+import { WordList } from "./WordList.tsx";
 
 interface DecompositionTreeProps {
   decomposition?: CharacterDecomposition;
@@ -16,50 +17,30 @@ const DecompositionTree: React.FunctionComponent<DecompositionTreeProps> = (
   const decomposition = props.decomposition;
   const maxDepth = props.maxDepth ?? Infinity;
 
-  const hasTopLevelWordEntry = useAsync(async () => {
-    const tokenizer = loadTokenizer();
-
-    const hasWordEntry = async (word: string) =>
-      (await tokenizer.lookupSimplified(word)).length > 0 ||
-      (await tokenizer.lookupTraditional(word)).length > 0;
-
-    return typeof decomposition === "string"
-      ? await hasWordEntry(decomposition)
-      : decomposition?.value != null
-      ? await hasWordEntry(decomposition.value)
-      : false;
-  }, [decomposition]);
-
   return maxDepth < 0 ? null : (
     <div class="decomposition-tree">
       {decomposition == null ? (
         <p class="unknown">?</p>
       ) : typeof decomposition === "string" ? (
         <p class="radical">
-          {hasTopLevelWordEntry ? (
-            <a href={"#" + decomposition}>{decomposition}</a>
-          ) : (
-            decomposition
-          )}
+          <LinkifiedText value={decomposition} />
         </p>
       ) : (
         <>
           <p class={decomposition.value == null ? "unknown" : ""}>
             {decomposition.value == null ? (
               "?"
-            ) : hasTopLevelWordEntry ? (
-              <a href={"#" + decomposition.value}>{decomposition.value}</a>
             ) : (
-              decomposition.value
+              <LinkifiedText value={decomposition.value} />
             )}
           </p>
 
-          {decomposition.parts.some((part) => part != null) && (
+          {decomposition.components.some((component) => component != null) && (
             <ol>
-              {decomposition.parts.map((part) => (
+              {decomposition.components.map((component) => (
                 <li>
                   <DecompositionTree
-                    decomposition={part}
+                    decomposition={component}
                     maxDepth={maxDepth - 1}
                   />
                 </li>
@@ -96,17 +77,21 @@ const MeaningsList: React.FunctionComponent<MeaningsListProps> = (props) => {
   );
 };
 
+export interface DictionaryCharacterInfo {
+  character: string;
+  variants: string[];
+  meanings: DictionaryMeaning[];
+  decomposition?: CharacterDecomposition;
+  etymology?: string;
+  componentOf?: string[];
+  characterOf?: string[];
+}
+
 export interface DictionaryPaneProps {
   word?: string;
   variants?: string[];
   meanings?: DictionaryMeaning[];
-  characters?: {
-    character: string;
-    variants: string[];
-    meanings: DictionaryMeaning[];
-    decomposition?: CharacterDecomposition;
-    etymology?: string;
-  }[];
+  characters?: DictionaryCharacterInfo[];
 }
 
 export const DictionaryPane: React.FunctionComponent<DictionaryPaneProps> = (
@@ -143,7 +128,7 @@ export const DictionaryPane: React.FunctionComponent<DictionaryPaneProps> = (
           <ul class="variants">
             {props.variants?.map((variant) => (
               <li>
-                <a href={"#" + variant}>{variant}</a>
+                <LinkifiedText value={variant} />
               </li>
             ))}
           </ul>
@@ -209,7 +194,7 @@ export const DictionaryPane: React.FunctionComponent<DictionaryPaneProps> = (
                 <ul class="variants">
                   {info.variants?.map((variant) => (
                     <li>
-                      <a href={"#" + variant}>{variant}</a>
+                      <LinkifiedText value={variant} />
                     </li>
                   ))}
                 </ul>
@@ -224,10 +209,21 @@ export const DictionaryPane: React.FunctionComponent<DictionaryPaneProps> = (
 
               {info.etymology != null && (
                 <p class="etymology">
-                  <strong>Etymology:</strong>{" "}
-                  <LinkifiedText value={info.etymology} />
+                  <h3>Etymology:</h3> <LinkifiedText value={info.etymology} />
                 </p>
               )}
+
+              <WordList
+                title="Character of"
+                words={info.characterOf}
+                length={10}
+              />
+
+              <WordList
+                title="Component of"
+                words={info.componentOf}
+                length={20}
+              />
             </li>
           ))}
         </ol>

@@ -4,7 +4,7 @@ import { prettify as pp } from "prettify-pinyin";
 import { loadTokenizer } from "../tokenizer.ts";
 import { useAsync } from "../hooks/useAsync.ts";
 import { TokenTextarea, Token } from "./TokenTextarea.tsx";
-import { DictionaryPane } from "./DictionaryPane.tsx";
+import { DictionaryCharacterInfo, DictionaryPane } from "./DictionaryPane.tsx";
 import { ModeSwitcher, ModeValue } from "./ModeSwitcher.tsx";
 import type { WordEntry } from "../../../tokenizer/pkg/chinese_tokenizer.d.ts";
 
@@ -85,7 +85,7 @@ export const App: React.FunctionalComponent = () => {
           ...((dictionaryEntries.value?.length ?? 0) > 0 && highlight != null
             ? highlight
             : ""),
-        ].map(async (character) => {
+        ].map<Promise<DictionaryCharacterInfo>>(async (character) => {
           const entries = await lookup(character, mode);
           const characterInfo = await tokenizer.lookupCharacter(character);
 
@@ -102,10 +102,22 @@ export const App: React.FunctionalComponent = () => {
               characterInfo?.etymology?.type !== "pictophonetic"
                 ? characterInfo?.etymology?.hint
                 : undefined,
+            componentOf: (
+              await (mode === "simplified"
+                ? tokenizer.lookupSimplifiedCharactersIncludingComponent
+                : tokenizer.lookupTraditionalCharactersIncludingComponent)(
+                character
+              )
+            ).map((entry) => entry.character),
+            characterOf: (
+              await (mode === "simplified"
+                ? tokenizer.lookupSimplifiedIncludingSubslice
+                : tokenizer.lookupTraditionalIncludingSubslice)(character)
+            ).map((entry) => entry[mode]),
           };
         })
       ),
-    [highlight, dictionaryEntries.value]
+    [mode, highlight, dictionaryEntries.value]
   );
 
   useEffect(

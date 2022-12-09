@@ -1,0 +1,11 @@
+.word-list {
+  margin: 1.5rem 0;
+}
+
+.word-list h3 {
+  margin-right: 0.5em;
+}
+
+.word-list a:not(:last-child) {
+  margin-right: 0.5em;
+}

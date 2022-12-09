@@ -6,6 +6,14 @@
   overflow: auto;
 }
 
+.dictionary-pane h3 {
+  display: inline;
+  font-size: 0.8em;
+  color: rgba(var(--light-text-color), 1);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
 .dictionary-pane a {
   border-bottom: 1px solid rgba(var(--light-link-text-color), 0.4);
   padding-bottom: 0.1em;
@@ -139,13 +147,6 @@
 
 .dictionary-pane .character-info .etymology {
   color: rgba(var(--light-text-color), 0.7);
-}
-
-.dictionary-pane .character-info .etymology strong {
-  font-size: 0.8em;
-  color: rgba(var(--light-text-color), 1);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
 }
 
 .decomposition-tree {
