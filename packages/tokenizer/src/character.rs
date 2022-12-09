@@ -32,8 +32,10 @@ pub struct CharacterEntry {
   pub character: char,
   pub definition: Option<String>,
   pub pinyin: Vec<String>,
+  #[serde(skip_serializing)]
   pub decomposition: String,
   pub etymology: Option<CharacterEtymology>,
+  #[serde(skip_serializing)]
   pub matches: Vec<serde_json::Value>,
   #[serde(skip_deserializing)]
   pub strokes: usize,
@@ -60,6 +62,10 @@ impl Dictionary {
 
   pub fn get(&self, character: char) -> Option<&CharacterEntry> {
     self.data.get(&character)
+  }
+
+  pub fn iter(&self) -> impl Iterator<Item = &CharacterEntry> + '_ {
+    self.data.values()
   }
 }
 

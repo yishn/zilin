@@ -133,6 +133,18 @@ pub fn lookup_character(character: char) -> Option<&'static CharacterEntry> {
   CHARACTER_DATA.get(character)
 }
 
+pub fn lookup_characters_with_component(
+  component: char,
+) -> Vec<&'static CharacterEntry> {
+  let mut result = CHARACTER_DATA
+    .iter()
+    .filter(|entry| entry.decomposition.chars().any(|ch| ch == component))
+    .collect::<Vec<_>>();
+
+  result.sort_by_key(|entry| entry.strokes);
+  result
+}
+
 #[derive(Debug, Clone)]
 pub enum CharacterDecomposition {
   Unknown,
@@ -142,6 +154,12 @@ pub enum CharacterDecomposition {
     value: Option<char>,
     parts: Vec<CharacterDecomposition>,
   },
+}
+
+impl Default for CharacterDecomposition {
+  fn default() -> Self {
+    Self::Unknown
+  }
 }
 
 pub fn decompose(character: char) -> CharacterDecomposition {

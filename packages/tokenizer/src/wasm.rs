@@ -1,8 +1,9 @@
 use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::{
-  cedict::WordEntry, decompose, lookup_character, lookup_simplified,
-  lookup_traditional, tokenize, CharacterDecomposition, Token,
+  cedict::WordEntry, character::CharacterEntry, decompose, lookup_character,
+  lookup_characters_with_component, lookup_simplified, lookup_traditional,
+  tokenize, CharacterDecomposition, Token,
 };
 
 #[wasm_bindgen(typescript_custom_section)]
@@ -24,7 +25,6 @@ const TYPESCRIPT_TYPES: &'static str = r#"
     character: string;
     definition?: string;
     pinyin: string[];
-    decomposition: CharacterDecomposition;
     etymology?: 
       | {
         type: "ideographic" | "pictographic";
@@ -78,10 +78,7 @@ extern "C" {
   ) -> JsWordEntry;
 
   #[wasm_bindgen(js_name = "createCharacterEntry")]
-  fn create_character_entry(
-    data: &str,
-    decomposition: JsCharacterDecomposition,
-  ) -> JsCharacterEntry;
+  fn create_character_entry(data: &str) -> JsCharacterEntry;
 
   #[wasm_bindgen(js_name = "createDecomposition")]
   fn create_decomposition(
@@ -105,6 +102,12 @@ impl<'a> From<&'a WordEntry> for JsWordEntry {
       &value.pinyin,
       &value.english,
     )
+  }
+}
+
+impl<'a> From<&'a CharacterEntry> for JsCharacterEntry {
+  fn from(value: &'a CharacterEntry) -> Self {
+    create_character_entry(&serde_json::to_string(value).unwrap())
   }
 }
 
@@ -151,15 +154,20 @@ pub fn _lookup_traditional(word: &str) -> Vec<JsWordEntry> {
 
 #[wasm_bindgen(js_name = "lookupCharacter")]
 pub fn _lookup_character(character: char) -> Option<JsCharacterEntry> {
-  lookup_character(character).map(|entry| {
-    create_character_entry(
-      &serde_json::to_string(entry).unwrap(),
-      _decompose(character),
-    )
-  })
+  lookup_character(character).map(JsCharacterEntry::from)
+}
+
+#[wasm_bindgen(js_name = "lookupCharactersWithComponent")]
+pub fn _lookup_characters_with_component(
+  component: char,
+) -> Vec<JsCharacterEntry> {
+  lookup_characters_with_component(component)
+    .into_iter()
+    .map(JsCharacterEntry::from)
+    .collect()
 }
 
 #[wasm_bindgen(js_name = "decompose")]
 pub fn _decompose(character: char) -> JsCharacterDecomposition {
-  (&decompose(character)).into()
+  JsCharacterDecomposition::from(&decompose(character))
 }

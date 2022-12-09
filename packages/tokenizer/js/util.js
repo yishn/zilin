@@ -15,8 +15,8 @@ export function createWordEntry(traditional, simplified, pinyin, english) {
   };
 }
 
-export function createCharacterEntry(data, decomposition) {
-  return Object.assign(JSON.parse(data), { decomposition });
+export function createCharacterEntry(data) {
+  return JSON.parse(data);
 }
 
 export function createDecomposition(value, type, parts) {

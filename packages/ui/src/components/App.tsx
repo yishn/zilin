@@ -106,7 +106,9 @@ export const App: React.FunctionalComponent = () => {
 
       const word = decodeURIComponent(document.location.hash.slice(1));
 
-      setHighlight(word);
+      if (word.trim() !== "") {
+        setHighlight(word);
+      }
     };
 
     handlePopState();
@@ -166,7 +168,7 @@ export const App: React.FunctionalComponent = () => {
                   pinyin: prettifyPinyin(entry.pinyin),
                   explanation: prettifyExplanation(entry.english),
                 })) ?? [],
-              decomposition: characterInfo?.decomposition,
+              decomposition: tokenizer.value?.decompose(character),
               etymology:
                 characterInfo?.etymology?.type !== "pictophonetic"
                   ? characterInfo?.etymology?.hint
