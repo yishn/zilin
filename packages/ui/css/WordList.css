@@ -9,3 +9,20 @@
 .word-list a:not(:last-child) {
   margin-right: 0.5em;
 }
+
+.word-list .more {
+  border: none;
+  border-radius: 0.2em;
+  padding: 0 0.5em;
+  background-color: rgb(var(--dark-background-color));
+  color: rgb(var(--light-text-color));
+  font-size: 0.8em;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+
+.word-list .more:hover,
+.word-list .more:focus {
+  color: rgb(var(--light-text-color));
+  opacity: 1;
+}

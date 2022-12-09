@@ -161,8 +161,9 @@ fn lookup_words_including_subslice(
       &entry.traditional
     }
     .chars()
-    .filter_map(|ch| lookup_character(ch).map(|entry| entry.strokes))
-    .sum::<usize>()
+    .map(|ch| lookup_character(ch).map(|entry| entry.strokes))
+    .sum::<Option<usize>>()
+    .unwrap_or(usize::MAX)
   });
   result
 }

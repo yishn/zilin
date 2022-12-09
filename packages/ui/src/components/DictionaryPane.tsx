@@ -178,9 +178,11 @@ export const DictionaryPane: React.FunctionComponent<DictionaryPaneProps> = (
               (evt.currentTarget.scrollWidth - evt.currentTarget.offsetWidth);
 
             setCurrentCharacterIndex(
-              Math.round(
-                scrollPercentage * ((props.characters?.length ?? 1) - 1)
-              )
+              isNaN(scrollPercentage)
+                ? 0
+                : Math.round(
+                    scrollPercentage * ((props.characters?.length ?? 1) - 1)
+                  )
             );
           }}
         >
