@@ -2,12 +2,24 @@ import * as React from "preact";
 import type { JSX } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { useResizeObserver } from "../hooks/useResizeObserver.ts";
+import { useAsync } from "../hooks/useAsync.ts";
 
 export interface Token {
   value: string;
-  pronunciation?: () => string;
+  pronunciation?: () => Promise<string>;
   unselectable?: boolean;
 }
+
+const Pronunciation: React.FunctionComponent<{
+  pronunciation?: () => Promise<string>;
+}> = (props) => {
+  const pronunciation = useAsync(
+    async () => await props.pronunciation?.(),
+    [props.pronunciation]
+  );
+
+  return <span class="pronunciation">{pronunciation.value}</span>;
+};
 
 export interface TokenTextareaProps {
   value?: string;
@@ -127,7 +139,7 @@ export const TokenTextarea: React.FunctionComponent<TokenTextareaProps> = (
                 ))}
 
                 {props.highlight === token.value && (
-                  <span class="pronunciation">{token.pronunciation?.()}</span>
+                  <Pronunciation pronunciation={token.pronunciation} />
                 )}
               </div>
             );

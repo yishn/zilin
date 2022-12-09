@@ -1,6 +1,6 @@
 import * as React from "preact";
 import { useAsync } from "../hooks/useAsync.ts";
-import { loadTokenizer } from "../wasm.ts";
+import { loadTokenizer } from "../tokenizer.ts";
 
 export interface LinkifiedTextProps {
   value: string;
@@ -11,9 +11,7 @@ export const LinkifiedText: React.FunctionComponent<LinkifiedTextProps> = (
   props
 ) => {
   const tokens = useAsync(async () => {
-    const tokenizer = await loadTokenizer();
-
-    return tokenizer.tokenize(props.value);
+    return await loadTokenizer().tokenize(props.value);
   }, [props.value]);
 
   return (

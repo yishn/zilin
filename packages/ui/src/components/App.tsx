@@ -1,7 +1,7 @@
 import * as React from "preact";
 import { useEffect, useMemo, useState } from "preact/hooks";
 import { prettify as pp } from "prettify-pinyin";
-import { loadTokenizer } from "../wasm.ts";
+import { loadTokenizer } from "../tokenizer.ts";
 import { useAsync } from "../hooks/useAsync.ts";
 import { TokenTextarea, Token } from "./TokenTextarea.tsx";
 import { DictionaryPane } from "./DictionaryPane.tsx";
@@ -22,32 +22,25 @@ function prettifyExplanation(input: string): string {
 }
 
 export const App: React.FunctionalComponent = () => {
-  const tokenizer = useAsync(async () => {
-    return await loadTokenizer();
-  }, []);
+  const tokenizer = loadTokenizer();
 
   const [mode, setMode] = useState<ModeValue>("simplified");
   const [input, setInput] = useState("");
   const [highlight, setHighlight] = useState<string>();
 
-  const tokens = useMemo(
-    () => tokenizer.value?.tokenize(input),
-    [tokenizer.value, input]
-  );
-
-  const lookup = (word: string, mode: ModeValue) =>
+  const lookup = async (word: string, mode: ModeValue) =>
     mode === "simplified"
-      ? tokenizer.value?.lookupSimplified(word)
-      : tokenizer.value?.lookupTraditional(word);
+      ? await tokenizer.lookupSimplified(word)
+      : await tokenizer.lookupTraditional(word);
 
-  const tokenTokenizerTokens = useMemo(
-    () =>
-      tokens?.map<Token>((token) => ({
+  const tokens = useAsync(
+    async () =>
+      (await tokenizer.tokenize(input)).map<Token>((token) => ({
         value: token.value,
-        pronunciation: () => {
+        pronunciation: async () => {
           const entries = [
-            ...(tokenizer.value?.lookupSimplified(token.value) ?? []),
-            ...(tokenizer.value?.lookupTraditional(token.value) ?? []),
+            ...(await tokenizer.lookupSimplified(token.value)),
+            ...(await tokenizer.lookupTraditional(token.value)),
           ];
 
           return [...new Set(entries.map((entry) => entry.pinyin))]
@@ -57,16 +50,14 @@ export const App: React.FunctionalComponent = () => {
         },
         unselectable: token.value.trim() === "" || !token.hasEntries,
       })),
-    [tokens]
+    [input]
   );
 
-  const dictionaryEntries = useMemo(() => {
-    if (highlight != null && tokenizer.fulfilled) {
-      return lookup(highlight, mode) ?? [];
-    }
-
-    return [];
-  }, [mode, tokenizer.fulfilled, highlight]);
+  const dictionaryEntries = useAsync(
+    async () =>
+      highlight == null ? [] : (await lookup(highlight, mode)) ?? [],
+    [mode, highlight]
+  );
 
   function getVariants(character: string, entries: WordEntry[]): string[] {
     const set = new Set(
@@ -79,25 +70,58 @@ export const App: React.FunctionalComponent = () => {
   }
 
   const wordVariants = useMemo(
-    () => getVariants(highlight ?? "", dictionaryEntries),
-    [dictionaryEntries, highlight]
+    () =>
+      getVariants(
+        highlight ?? "",
+        dictionaryEntries.value ?? dictionaryEntries.previousValue ?? []
+      ),
+    [dictionaryEntries.value ?? dictionaryEntries.previousValue]
+  );
+
+  const characters = useAsync(
+    async () =>
+      await Promise.all(
+        [
+          ...((dictionaryEntries.value?.length ?? 0) > 0 && highlight != null
+            ? highlight
+            : ""),
+        ].map(async (character) => {
+          const entries = await lookup(character, mode);
+          const characterInfo = await tokenizer.lookupCharacter(character);
+
+          return {
+            character,
+            variants: getVariants(character, entries ?? []),
+            meanings:
+              entries?.map((entry) => ({
+                pinyin: prettifyPinyin(entry.pinyin),
+                explanation: prettifyExplanation(entry.english),
+              })) ?? [],
+            decomposition: await tokenizer.decompose(character),
+            etymology:
+              characterInfo?.etymology?.type !== "pictophonetic"
+                ? characterInfo?.etymology?.hint
+                : undefined,
+          };
+        })
+      ),
+    [highlight, dictionaryEntries.value]
   );
 
   useEffect(
     function switchMode() {
-      if (
-        tokenizer.value != null &&
-        highlight != null &&
-        dictionaryEntries.length === 0
-      ) {
-        const otherMode = mode === "simplified" ? "traditional" : "simplified";
+      (async () => {
+        if (highlight != null && dictionaryEntries.value?.length === 0) {
+          const otherMode =
+            mode === "simplified" ? "traditional" : "simplified";
 
-        if (lookup(highlight, otherMode)!.length > 0) {
-          setMode(otherMode);
+          if ((await lookup(highlight, otherMode)!).length > 0) {
+            setMode(otherMode);
+          }
         }
-      }
+      })();
     },
-    [tokenizer.value, dictionaryEntries]
+    [dictionaryEntries.value]
   );
 
   useEffect(function handleHistory() {
@@ -122,8 +146,8 @@ export const App: React.FunctionalComponent = () => {
     <div class="app">
       <TokenTextarea
         value={input}
-        loading={!tokenizer.fulfilled}
-        tokens={tokenTokenizerTokens}
+        loading={!tokens.fulfilled}
+        tokens={tokens.value}
         highlight={highlight}
         onInput={(evt) => setInput(evt.currentTarget.value)}
       />
@@ -132,12 +156,12 @@ export const App: React.FunctionalComponent = () => {
         <ModeSwitcher
           mode={mode}
           onChange={(evt) => {
-            const needHighlightChange = !dictionaryEntries.some(
+            const needHighlightChange = !dictionaryEntries.value?.some(
               (entry) => entry[evt.mode] === highlight
             );
 
             if (needHighlightChange) {
-              const newHighlight = dictionaryEntries[0]?.[evt.mode];
+              const newHighlight = dictionaryEntries.value?.[0]?.[evt.mode];
               globalThis.location.href = "#" + newHighlight;
             }
 
@@ -146,35 +170,20 @@ export const App: React.FunctionalComponent = () => {
         />
 
         <DictionaryPane
-          word={dictionaryEntries.length > 0 ? highlight : undefined}
+          word={
+            ((dictionaryEntries.value ?? dictionaryEntries.previousValue)
+              ?.length ?? 0) > 0
+              ? highlight
+              : undefined
+          }
           variants={wordVariants}
-          meanings={dictionaryEntries.map((entry) => ({
+          meanings={(
+            dictionaryEntries.value ?? dictionaryEntries.previousValue
+          )?.map((entry) => ({
             pinyin: prettifyPinyin(entry.pinyin),
             explanation: prettifyExplanation(entry.english),
           }))}
-          characters={[
-            ...(dictionaryEntries.length > 0 && highlight != null
-              ? highlight
-              : ""),
-          ].map((character) => {
-            const entries = lookup(character, mode);
-            const characterInfo = tokenizer.value?.lookupCharacter(character);
-
-            return {
-              character,
-              variants: getVariants(character, entries ?? []),
-              meanings:
-                entries?.map((entry) => ({
-                  pinyin: prettifyPinyin(entry.pinyin),
-                  explanation: prettifyExplanation(entry.english),
-                })) ?? [],
-              decomposition: tokenizer.value?.decompose(character),
-              etymology:
-                characterInfo?.etymology?.type !== "pictophonetic"
-                  ? characterInfo?.etymology?.hint
-                  : undefined,
-            };
-          })}
+          characters={characters.value ?? characters.previousValue}
         />
       </aside>
     </div>

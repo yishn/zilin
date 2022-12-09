@@ -2,7 +2,7 @@ import * as React from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { CharacterDecomposition } from "../../../tokenizer/pkg/chinese_tokenizer.d.ts";
 import { useAsync } from "../hooks/useAsync.ts";
-import { loadTokenizer } from "../wasm.ts";
+import { loadTokenizer } from "../tokenizer.ts";
 import { LinkifiedText } from "./LinkifiedText.tsx";
 
 interface DecompositionTreeProps {
@@ -16,11 +16,19 @@ const DecompositionTree: React.FunctionComponent<DecompositionTreeProps> = (
   const decomposition = props.decomposition;
   const maxDepth = props.maxDepth ?? Infinity;
 
-  const tokenizer = useAsync(() => loadTokenizer(), []);
+  const hasTopLevelWordEntry = useAsync(async () => {
+    const tokenizer = loadTokenizer();
 
-  const hasWordEntry = (word: string) =>
-    (tokenizer.value?.lookupSimplified(word).length ?? 0) > 0 ||
-    (tokenizer.value?.lookupTraditional(word).length ?? 0) > 0;
+    const hasWordEntry = async (word: string) =>
+      (await tokenizer.lookupSimplified(word)).length > 0 ||
+      (await tokenizer.lookupTraditional(word)).length > 0;
+
+    return typeof decomposition === "string"
+      ? await hasWordEntry(decomposition)
+      : decomposition?.value != null
+      ? await hasWordEntry(decomposition.value)
+      : false;
+  }, [decomposition]);
 
   return maxDepth < 0 ? null : (
     <div class="decomposition-tree">
@@ -28,7 +36,7 @@ const DecompositionTree: React.FunctionComponent<DecompositionTreeProps> = (
         <p class="unknown">?</p>
       ) : typeof decomposition === "string" ? (
         <p class="radical">
-          {hasWordEntry(decomposition) ? (
+          {hasTopLevelWordEntry ? (
             <a href={"#" + decomposition}>{decomposition}</a>
           ) : (
             decomposition
@@ -39,7 +47,7 @@ const DecompositionTree: React.FunctionComponent<DecompositionTreeProps> = (
           <p class={decomposition.value == null ? "unknown" : ""}>
             {decomposition.value == null ? (
               "?"
-            ) : hasWordEntry(decomposition.value) ? (
+            ) : hasTopLevelWordEntry ? (
               <a href={"#" + decomposition.value}>{decomposition.value}</a>
             ) : (
               decomposition.value
@@ -114,6 +122,7 @@ export const DictionaryPane: React.FunctionComponent<DictionaryPaneProps> = (
     function resetCurrentCharacter() {
       charactersContainerRef.current?.scrollTo({
         left: 0,
+        behavior: "smooth",
       });
 
       setCurrentCharacterIndex(0);
