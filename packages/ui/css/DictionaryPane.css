@@ -71,7 +71,7 @@
 .dictionary-pane .character-info {
   position: relative;
   display: flex;
-  flex: 1;
+  flex: 2;
   background-color: rgb(var(--dark-background-color-lighter));
 }
 

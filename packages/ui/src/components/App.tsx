@@ -17,8 +17,8 @@ function prettifyExplanation(input: string): string {
     .replaceAll("/", " / ")
     .replaceAll("|", " | ")
     .replaceAll(",", ", ")
-    .replaceAll(":", ": ")
-    .replace(/\[([^\]]*)\]/g, (_, pinyin) => ` [${prettifyPinyin(pinyin)}]`);
+    .replace(/\[([^\]]*)\]/g, (_, pinyin) => ` [${prettifyPinyin(pinyin)}]`)
+    .replaceAll(":", ": ");
 }
 
 export const App: React.FunctionalComponent = () => {
