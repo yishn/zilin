@@ -46,8 +46,8 @@ pub fn tokenize(input: &str) -> Vec<Token> {
       let mut found_word = None::<&str>;
 
       let entries = CEDICT_DATA
-        .get_simplified_prefix(&prefix)
-        .chain(CEDICT_DATA.get_traditional_prefix(&prefix));
+        .iter_simplified_prefix(&prefix)
+        .chain(CEDICT_DATA.iter_traditional_prefix(&prefix));
 
       for entry in entries {
         let new_found_word = if sliced_input.starts_with(&entry.simplified) {
@@ -129,11 +129,58 @@ pub fn lookup_traditional(word: &str) -> Option<&'static Vec<WordEntry>> {
   CEDICT_DATA.get_traditional(word)
 }
 
+fn lookup_words_including_subslice(
+  slice: &str,
+  simplified: bool,
+) -> Vec<&'static WordEntry> {
+  let mut result = simplified
+    .then(|| CEDICT_DATA.iter_simplified_prefix(""))
+    .into_iter()
+    .flatten()
+    .chain(
+      (!simplified)
+        .then(|| CEDICT_DATA.iter_traditional_prefix(""))
+        .into_iter()
+        .flatten(),
+    )
+    .filter(|entry| {
+      if simplified {
+        &entry.simplified
+      } else {
+        &entry.traditional
+      }
+      .contains(slice)
+    })
+    .collect::<Vec<_>>();
+
+  result.sort_by_cached_key(|entry| {
+    if simplified {
+      &entry.simplified
+    } else {
+      &entry.traditional
+    }
+    .chars()
+    .filter_map(|ch| lookup_character(ch).map(|entry| entry.strokes))
+    .sum::<usize>()
+  });
+  result
+}
+
+pub fn lookup_simplified_including_subslice(slice: &str) -> Vec<&'static WordEntry> {
+  lookup_words_including_subslice(slice, true)
+}
+
+pub fn lookup_traditional_with_subslice(
+  slice: &str,
+) -> Vec<&'static WordEntry> {
+  lookup_words_including_subslice(slice, false)
+}
+
 pub fn lookup_character(character: char) -> Option<&'static CharacterEntry> {
   CHARACTER_DATA.get(character)
 }
 
-pub fn lookup_characters_with_component(
+pub fn lookup_characters_including_component(
   component: char,
 ) -> Vec<&'static CharacterEntry> {
   let mut result = CHARACTER_DATA
@@ -141,7 +188,7 @@ pub fn lookup_characters_with_component(
     .filter(|entry| entry.decomposition.chars().any(|ch| ch == component))
     .collect::<Vec<_>>();
 
-  result.sort_by_key(|entry| entry.strokes);
+  result.sort_unstable_by_key(|entry| entry.strokes);
   result
 }
 

@@ -2,8 +2,9 @@ use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::{
   cedict::WordEntry, character::CharacterEntry, decompose, lookup_character,
-  lookup_characters_with_component, lookup_simplified, lookup_traditional,
-  tokenize, CharacterDecomposition, Token,
+  lookup_characters_including_component, lookup_simplified,
+  lookup_simplified_including_subslice, lookup_traditional,
+  lookup_traditional_with_subslice, tokenize, CharacterDecomposition, Token,
 };
 
 #[wasm_bindgen(typescript_custom_section)]
@@ -152,16 +153,32 @@ pub fn _lookup_traditional(word: &str) -> Vec<JsWordEntry> {
     .unwrap_or_default()
 }
 
+#[wasm_bindgen(js_name = "lookupSimplifiedIncludingSubslice")]
+pub fn _lookup_simplified_including_subslice(slice: &str) -> Vec<JsWordEntry> {
+  lookup_simplified_including_subslice(slice)
+    .into_iter()
+    .map(JsWordEntry::from)
+    .collect()
+}
+
+#[wasm_bindgen(js_name = "lookupTraditionalIncludingSubslice")]
+pub fn _lookup_traditional_including_subslice(slice: &str) -> Vec<JsWordEntry> {
+  lookup_traditional_with_subslice(slice)
+    .into_iter()
+    .map(JsWordEntry::from)
+    .collect()
+}
+
 #[wasm_bindgen(js_name = "lookupCharacter")]
 pub fn _lookup_character(character: char) -> Option<JsCharacterEntry> {
   lookup_character(character).map(JsCharacterEntry::from)
 }
 
-#[wasm_bindgen(js_name = "lookupCharactersWithComponent")]
-pub fn _lookup_characters_with_component(
+#[wasm_bindgen(js_name = "lookupCharactersIncludingComponent")]
+pub fn _lookup_characters_including_component(
   component: char,
 ) -> Vec<JsCharacterEntry> {
-  lookup_characters_with_component(component)
+  lookup_characters_including_component(component)
     .into_iter()
     .map(JsCharacterEntry::from)
     .collect()

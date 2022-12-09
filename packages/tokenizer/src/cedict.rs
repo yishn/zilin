@@ -92,14 +92,14 @@ impl Cedict {
     self.traditional.get(word)
   }
 
-  pub fn get_simplified_prefix<'a>(
+  pub fn iter_simplified_prefix<'a>(
     &'a self,
     word: &str,
   ) -> impl Iterator<Item = &'a WordEntry> + 'a {
     self.simplified.get_prefix(word).flat_map(|vec| vec.iter())
   }
 
-  pub fn get_traditional_prefix<'a>(
+  pub fn iter_traditional_prefix<'a>(
     &'a self,
     word: &str,
   ) -> impl Iterator<Item = &'a WordEntry> + 'a {
@@ -131,7 +131,7 @@ mod tests {
   #[test]
   fn can_get_all_words_with_prefix() {
     let data = CEDICT_DATA
-      .get_simplified_prefix("中国")
+      .iter_simplified_prefix("中国")
       .collect::<Vec<_>>();
 
     assert!(data.len() > 2);
