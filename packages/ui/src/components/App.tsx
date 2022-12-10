@@ -121,6 +121,14 @@ export const App: React.FunctionalComponent = () => {
   );
 
   useEffect(
+    function updateTitle() {
+      document.title =
+        (highlight?.length ?? 0) <= 0 ? "Zilin" : `Zilin – ${highlight}`;
+    },
+    [highlight]
+  );
+
+  useEffect(
     function switchMode() {
       (async () => {
         if (highlight != null && dictionaryEntries.value?.length === 0) {

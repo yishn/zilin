@@ -101,7 +101,7 @@ export const DictionaryPane: React.FunctionComponent<DictionaryPaneProps> = (
 
   const [currentCharacterIndex, setCurrentCharacterIndex] = useState(0);
 
-  const oneCharacter = props.characters?.length === 1;
+  const oneCharacter = props.word?.length === 1;
 
   useEffect(
     function resetCurrentCharacter() {
