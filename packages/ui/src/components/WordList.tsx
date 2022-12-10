@@ -28,6 +28,7 @@ export const WordList: React.FunctionComponent<WordListProps> = (props) => {
             .map((word) => word)
             .join(" ") ?? ""
         }
+        preventFallback
       />{" "}
       {length < (props.words?.length ?? 0) && (
         <a

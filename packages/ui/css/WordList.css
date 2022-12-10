@@ -6,6 +6,11 @@
   margin-right: 0.5em;
 }
 
+.word-list a {
+  display: inline-block;
+  line-height: 1;
+}
+
 .word-list a:not(:last-child) {
   margin-right: 0.5em;
 }

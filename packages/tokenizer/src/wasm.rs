@@ -122,13 +122,18 @@ impl<'a> From<&'a CharacterDecomposition> for JsCharacterDecomposition {
       CharacterDecomposition::Radical(value) => {
         create_decomposition(Some(*value), None, vec![])
       }
-      CharacterDecomposition::Components { ty, value, components: parts } => {
-        create_decomposition(
-          *value,
-          Some(*ty),
-          parts.iter().map(JsCharacterDecomposition::from).collect(),
-        )
-      }
+      CharacterDecomposition::Components {
+        ty,
+        value,
+        components,
+      } => create_decomposition(
+        *value,
+        Some(*ty),
+        components
+          .iter()
+          .map(JsCharacterDecomposition::from)
+          .collect(),
+      ),
     }
   }
 }
@@ -159,6 +164,7 @@ pub fn _lookup_simplified_including_subslice(slice: &str) -> Vec<JsWordEntry> {
   lookup_simplified_including_subslice(slice)
     .into_iter()
     .map(JsWordEntry::from)
+    .take(300)
     .collect()
 }
 
@@ -167,6 +173,7 @@ pub fn _lookup_traditional_including_subslice(slice: &str) -> Vec<JsWordEntry> {
   lookup_traditional_with_subslice(slice)
     .into_iter()
     .map(JsWordEntry::from)
+    .take(300)
     .collect()
 }
 

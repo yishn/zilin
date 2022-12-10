@@ -5,6 +5,7 @@ import { loadTokenizer } from "../tokenizer.ts";
 export interface LinkifiedTextProps {
   value: string;
   handleSeparators?: boolean;
+  preventFallback?: boolean;
 }
 
 export const LinkifiedText: React.FunctionComponent<LinkifiedTextProps> = (
@@ -17,7 +18,9 @@ export const LinkifiedText: React.FunctionComponent<LinkifiedTextProps> = (
   return (
     <>
       {tokens.value == null
-        ? props.value
+        ? props.preventFallback
+          ? null
+          : props.value
         : tokens.value.map((token) => {
             if (token.hasEntries) {
               return <a href={"#" + token.value}>{token.value}</a>;
