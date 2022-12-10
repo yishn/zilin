@@ -5,7 +5,7 @@ export type PromiseHook<T> = {
   previousValue?: T;
   value?: T;
   err?: Error;
-} 
+};
 
 export function useAsync<T>(
   fn: () => Promise<T>,
@@ -22,12 +22,14 @@ export function useAsync<T>(
 
     setState((state) => ({
       fulfilled: false,
-      previousValue: state.value,
+      previousValue: state.fulfilled && state.err == null
+        ? state.value
+        : state.previousValue,
     }));
 
     prom
-      .then((value) => ({ value }))
-      .catch((err) => ({ err }))
+      .then((value) => ({ value, err: undefined }))
+      .catch((err) => ({ value: undefined, err }))
       .then((update) => {
         if (promRef.current !== prom) return;
 

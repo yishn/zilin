@@ -1,5 +1,5 @@
 import * as React from "preact";
-import { useEffect, useMemo, useState } from "preact/hooks";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { prettify as pp } from "prettify-pinyin";
 import { loadTokenizer } from "../tokenizer.ts";
 import { useAsync } from "../hooks/useAsync.ts";
@@ -33,25 +33,32 @@ export const App: React.FunctionalComponent = () => {
       ? await tokenizer.lookupSimplified(word)
       : await tokenizer.lookupTraditional(word);
 
-  const tokens = useAsync(
-    async () =>
-      (await tokenizer.tokenize(input)).map<Token>((token) => ({
-        value: token.value,
-        pronunciation: async () => {
-          const entries = [
-            ...(await tokenizer.lookupSimplified(token.value)),
-            ...(await tokenizer.lookupTraditional(token.value)),
-          ];
+  const tokensTimeout = useRef<number | undefined>(undefined);
+  const tokens = useAsync(async () => {
+    clearTimeout(tokensTimeout.current);
 
-          return [...new Set(entries.map((entry) => entry.pinyin))]
-            .sort()
-            .map((pinyin) => prettifyPinyin(pinyin))
-            .join("/");
-        },
-        unselectable: token.value.trim() === "" || !token.hasEntries,
-      })),
-    [input]
-  );
+    await new Promise((resolve) => {
+      tokensTimeout.current = setTimeout(resolve, 50);
+    });
+
+    const tokens = await tokenizer.tokenize(input);
+
+    return tokens.map<Token>((token) => ({
+      value: token.value,
+      pronunciation: async () => {
+        const entries = [
+          ...(await tokenizer.lookupSimplified(token.value)),
+          ...(await tokenizer.lookupTraditional(token.value)),
+        ];
+
+        return [...new Set(entries.map((entry) => entry.pinyin))]
+          .sort()
+          .map((pinyin) => prettifyPinyin(pinyin))
+          .join("/");
+      },
+      unselectable: token.value.trim() === "" || !token.hasEntries,
+    }));
+  }, [input]);
 
   const dictionaryEntries = useAsync(
     async () =>
@@ -166,8 +173,8 @@ export const App: React.FunctionalComponent = () => {
     <div class="app">
       <TokenTextarea
         value={input}
-        loading={!tokens.fulfilled}
-        tokens={tokens.value}
+        loading={(tokens.value ?? tokens.previousValue) == null}
+        tokens={tokens.value ?? tokens.previousValue}
         highlight={highlight}
         onInput={(evt) => setInput(evt.currentTarget.value)}
       />
