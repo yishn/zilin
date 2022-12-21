@@ -1,7 +1,7 @@
 import * as React from "preact";
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { prettify as pp } from "prettify-pinyin";
-import { loadTokenizer } from "../tokenizer.ts";
+import { getTokenizer } from "../tokenizer.ts";
 import { useAsync } from "../hooks/useAsync.ts";
 import { TokenTextarea, Token } from "./TokenTextarea.tsx";
 import { DictionaryCharacterInfo, DictionaryPane } from "./DictionaryPane.tsx";
@@ -22,7 +22,7 @@ function prettifyExplanation(input: string): string {
 }
 
 export const App: React.FunctionalComponent = () => {
-  const tokenizer = loadTokenizer();
+  const tokenizer = getTokenizer();
 
   const [mode, setMode] = useState<ModeValue>("simplified");
   const [input, setInput] = useState("");

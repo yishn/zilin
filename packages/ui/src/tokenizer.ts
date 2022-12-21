@@ -1,4 +1,4 @@
-import type { MessageBody, ResponseBody, Tokenizer } from "./worker.ts";
+import type { RequestBody, ResponseBody, Tokenizer } from "./worker.ts";
 
 type PromisifiedTokenizer = {
   [K in keyof Tokenizer]: (
@@ -9,13 +9,13 @@ type PromisifiedTokenizer = {
 const worker = new Worker("./packages/ui/dist/worker.js", { type: "module" });
 
 let id = 0;
-let tokenizer: PromisifiedTokenizer | undefined;
+let tokenizer: PromisifiedTokenizer;
 
-export function loadTokenizer(): PromisifiedTokenizer {
+export function getTokenizer(): PromisifiedTokenizer {
   if (tokenizer != null) return tokenizer;
 
   return tokenizer = new Proxy({}, {
-    get(_, key) {
+    get(_, key: keyof Tokenizer) {
       return (...args: unknown[]) =>
         new Promise((resolve, reject) => {
           const currentId = id++;
@@ -31,11 +31,13 @@ export function loadTokenizer(): PromisifiedTokenizer {
 
           worker.addEventListener("message", handleMessage);
 
-          worker.postMessage({
+          const msg: RequestBody = {
             id: currentId,
             fn: key,
             args,
-          } as MessageBody);
+          };
+
+          worker.postMessage(msg);
         });
     },
   }) as PromisifiedTokenizer;

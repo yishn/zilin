@@ -1,7 +1,7 @@
 export type Tokenizer =
   typeof import("../../tokenizer/pkg/chinese_tokenizer.d.ts");
 
-export interface MessageBody {
+export interface RequestBody {
   id: number;
   fn: keyof Tokenizer;
   args?: unknown[];
@@ -24,7 +24,7 @@ const tokenizer = import(
 globalThis.addEventListener(
   "message",
   async (
-    evt: MessageEvent<MessageBody>,
+    evt: MessageEvent<RequestBody>,
   ) => {
     try {
       const result =
