@@ -6,6 +6,16 @@
   overflow: auto;
 }
 
+.dictionary-pane::-webkit-scrollbar {
+  background-color: transparent;
+  width: 0.5rem;
+  height: 0.5rem;
+}
+
+.dictionary-pane::-webkit-scrollbar-thumb {
+  background-color: rgb(var(--dark-scrollbar-color));
+}
+
 .dictionary-pane h3 {
   display: inline;
   font-size: 0.8em;
@@ -119,16 +129,7 @@
   display: flex;
   flex: 1;
   list-style: none;
-  overflow: auto;
-}
-
-.dictionary-pane .character-info .characters::-webkit-scrollbar {
-  background-color: inherit;
-  height: 0.5rem;
-}
-
-.dictionary-pane .character-info .characters::-webkit-scrollbar-thumb {
-  background-color: rgb(var(--dark-background-color));
+  overflow: hidden;
 }
 
 .dictionary-pane .character-info .characters > li {

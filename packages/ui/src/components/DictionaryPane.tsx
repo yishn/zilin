@@ -1,8 +1,6 @@
 import * as React from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { CharacterDecomposition } from "../../../tokenizer/pkg/chinese_tokenizer.d.ts";
-import { useAsync } from "../hooks/useAsync.ts";
-import { loadTokenizer } from "../tokenizer.ts";
 import { LinkifiedText } from "./LinkifiedText.tsx";
 import { WordList } from "./WordList.tsx";
 

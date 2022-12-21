@@ -115,12 +115,16 @@ export const App: React.FunctionalComponent = () => {
                 : tokenizer.lookupTraditionalCharactersIncludingComponent)(
                 character
               )
-            ).map((entry) => entry.character),
+            )
+              .map((entry) => entry.character)
+              .filter((word, i, arr) => i === 0 || word !== arr[i - 1]),
             characterOf: (
               await (mode === "simplified"
                 ? tokenizer.lookupSimplifiedIncludingSubslice
                 : tokenizer.lookupTraditionalIncludingSubslice)(character)
-            ).map((entry) => entry[mode]),
+            )
+              .map((entry) => entry[mode])
+              .filter((word, i, arr) => i === 0 || word !== arr[i - 1]),
           };
         })
       ),
@@ -189,7 +193,10 @@ export const App: React.FunctionalComponent = () => {
 
             if (needHighlightChange) {
               const newHighlight = dictionaryEntries.value?.[0]?.[evt.mode];
-              globalThis.location.href = "#" + newHighlight;
+
+              if (newHighlight != null) {
+                globalThis.location.href = "#" + newHighlight;
+              }
             }
 
             setMode(evt.mode);
