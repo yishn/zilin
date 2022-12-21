@@ -89,7 +89,7 @@ export const TokenTextarea: React.FunctionComponent<TokenTextareaProps> = (
 
       {contentSize != null && (
         <textarea
-          style={{ ...contentSize }}
+          style={{ height: contentSize.height }}
           autofocus
           value={props.value}
           onInput={props.onInput}
@@ -97,7 +97,7 @@ export const TokenTextarea: React.FunctionComponent<TokenTextareaProps> = (
       )}
 
       {contentSize != null && (
-        <div class="overlay" style={{ ...contentSize }}>
+        <div class="overlay" style={{ height: contentSize.height }}>
           {tokenRects?.map((rects, i) => {
             const token = tokens[i];
             if (token == null) return;

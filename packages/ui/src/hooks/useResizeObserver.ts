@@ -1,7 +1,7 @@
 import { Ref, useEffect, useState } from "preact/hooks";
 
 export function useResizeObserver(
-  elementRef: Ref<HTMLDivElement>
+  elementRef: Ref<HTMLElement>,
 ): { width: number; height: number } | undefined {
   const [size, setSize] = useState<{ width: number; height: number }>();
 
@@ -10,24 +10,18 @@ export function useResizeObserver(
       const element = elementRef.current;
       if (element == null) return;
 
-      let lastUpdateTimestamp = Date.now();
-
-      setSize({
-        width: element.offsetWidth,
-        height: element.offsetHeight,
-      });
+      let lastUpdateTimeout: number;
 
       const observer = new ResizeObserver((entries) => {
-        if (
-          Date.now() - lastUpdateTimestamp > 30 &&
-          entries.find((entry) => entry.target === element) != null
-        ) {
-          setSize({
-            width: element.offsetWidth,
-            height: element.offsetHeight,
-          });
+        clearTimeout(lastUpdateTimeout);
 
-          lastUpdateTimestamp = Date.now();
+        if (entries.some((entry) => entry.target === element)) {
+          lastUpdateTimeout = setTimeout(() => {
+            setSize({
+              width: element.offsetWidth,
+              height: element.offsetHeight,
+            });
+          }, 30);
         }
       });
 
@@ -35,7 +29,7 @@ export function useResizeObserver(
 
       return () => observer.disconnect();
     },
-    [elementRef.current]
+    [elementRef.current],
   );
 
   return size;

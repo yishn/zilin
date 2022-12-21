@@ -8,11 +8,11 @@
 .token-textarea > * {
   position: absolute;
   left: 0;
-  right: 0;
   top: 0;
+  width: 100%;
   min-height: 100%;
   padding: 1.2rem;
-  overflow: none;
+  overflow: visible;
   font: inherit;
   white-space: pre-wrap;
   word-break: break-all;
