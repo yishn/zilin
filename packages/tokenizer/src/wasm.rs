@@ -1,11 +1,17 @@
 use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::{
-  cedict::WordEntry, character::CharacterEntry, decompose, lookup_character,
-  lookup_simplified, lookup_simplified_characters_including_component,
-  lookup_simplified_including_subslice, lookup_traditional,
-  lookup_traditional_characters_including_component,
-  lookup_traditional_with_subslice, tokenize, CharacterDecomposition, Token,
+  cedict::{
+    lookup_simplified, lookup_simplified_including_subslice,
+    lookup_traditional, lookup_traditional_with_subslice, tokenize, Token,
+    WordEntry,
+  },
+  character::{
+    decompose, lookup_character,
+    lookup_simplified_characters_including_component,
+    lookup_traditional_characters_including_component, CharacterDecomposition,
+    CharacterEntry,
+  },
 };
 
 #[wasm_bindgen(typescript_custom_section)]
