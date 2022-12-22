@@ -7,12 +7,15 @@ export interface RequestBody {
   args?: unknown[];
 }
 
-export interface ResponseBody {
-  id: number;
-  err?: Error;
-  // deno-lint-ignore no-explicit-any
-  result?: any;
-}
+export type ResponseBody =
+  & { id: number }
+  & ({
+    err: Error;
+    result?: undefined;
+  } | {
+    err?: undefined;
+    result: unknown;
+  });
 
 const tokenizer = import(
   "../../tokenizer/pkg/chinese_tokenizer.js"
