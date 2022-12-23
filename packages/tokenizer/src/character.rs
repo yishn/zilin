@@ -3,7 +3,7 @@ use rustc_hash::FxHashMap as HashMap;
 use serde::{Deserialize, Serialize};
 use std::io::{BufRead, BufReader};
 
-use crate::cedict::{lookup_simplified, lookup_traditional};
+use crate::dictionary::CEDICT_DATA;
 
 pub const BINARY_DECOMPOSITION_TYPES: &[char] =
   &['⿰', '⿱', '⿴', '⿵', '⿶', '⿷', '⿸', '⿹', '⿺', '⿻'];
@@ -91,9 +91,9 @@ fn lookup_characters_including_component(
       let word = entry.character.to_string();
 
       if simplified {
-        lookup_simplified(&word)
+        CEDICT_DATA.get_simplified(&word)
       } else {
-        lookup_traditional(&word)
+        CEDICT_DATA.get_traditional(&word)
       }
       .is_some()
     })

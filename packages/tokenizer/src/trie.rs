@@ -103,27 +103,28 @@ impl<T> Trie<T> {
       })
   }
 
-  pub fn get_prefix<'a>(
-    &'a self,
-    key: &str,
-  ) -> Box<dyn Iterator<Item = &'a T> + 'a> {
+  pub fn iter_prefix(&self, key: &str) -> Box<dyn Iterator<Item = &T> + '_> {
     let mut chars = key.chars().peekable();
 
     if chars.peek().is_none() {
       // Return all entries
 
       return Box::new(self.data.values().flat_map(|entry| {
-        entry.0.as_ref().into_iter().chain(entry.1.get_prefix(""))
+        entry.0.as_ref().into_iter().chain(entry.1.iter_prefix(""))
       }));
     }
 
     let entry = self.entry(chars);
 
     if let Some(entry) = entry {
-      Box::new(entry.0.as_ref().into_iter().chain(entry.1.get_prefix("")))
+      Box::new(entry.0.as_ref().into_iter().chain(entry.1.iter_prefix("")))
     } else {
       Box::new(None.into_iter())
     }
+  }
+
+  pub fn iter(&self) -> impl Iterator<Item = &T> + '_ {
+    self.iter_prefix("")
   }
 
   pub fn push(&mut self, key: &str, value: T) {

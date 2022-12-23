@@ -1,17 +1,13 @@
 use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::{
-  cedict::{
-    lookup_simplified, lookup_simplified_including_subslice,
-    lookup_traditional, lookup_traditional_with_subslice, tokenize, Token,
-    WordEntry,
-  },
   character::{
     decompose, lookup_character,
     lookup_simplified_characters_including_component,
     lookup_traditional_characters_including_component, CharacterDecomposition,
     CharacterEntry,
   },
+  dictionary::{tokenize, Token, WordEntry, CEDICT_DATA},
 };
 
 #[wasm_bindgen(typescript_custom_section)]
@@ -33,11 +29,11 @@ const TYPESCRIPT_TYPES: &'static str = r#"
     character: string;
     definition?: string;
     pinyin: string[];
-    etymology?: 
+    etymology?:
       | {
         type: "ideographic" | "pictographic";
         hint: string;
-      } 
+      }
       | {
         type: "pictophonetic";
         hint?: string;
@@ -153,33 +149,43 @@ pub fn _tokenize(input: &str) -> Vec<JsToken> {
 
 #[wasm_bindgen(js_name = "lookupSimplified")]
 pub fn _lookup_simplified(word: &str) -> Vec<JsWordEntry> {
-  lookup_simplified(word)
+  CEDICT_DATA
+    .get_simplified(word)
     .map(|entries| entries.iter().map(JsWordEntry::from).collect())
     .unwrap_or_default()
 }
 
 #[wasm_bindgen(js_name = "lookupTraditional")]
 pub fn _lookup_traditional(word: &str) -> Vec<JsWordEntry> {
-  lookup_traditional(word)
+  CEDICT_DATA
+    .get_traditional(word)
     .map(|entries| entries.iter().map(JsWordEntry::from).collect())
     .unwrap_or_default()
 }
 
 #[wasm_bindgen(js_name = "lookupSimplifiedIncludingSubslice")]
-pub fn _lookup_simplified_including_subslice(slice: &str) -> Vec<JsWordEntry> {
-  lookup_simplified_including_subslice(slice)
+pub fn _lookup_simplified_including_subslice(
+  slice: &str,
+  limit: usize,
+) -> Vec<JsWordEntry> {
+  CEDICT_DATA
+    .get_simplified_including_subslice(slice)
     .into_iter()
     .map(JsWordEntry::from)
-    .take(300)
+    .take(limit)
     .collect()
 }
 
 #[wasm_bindgen(js_name = "lookupTraditionalIncludingSubslice")]
-pub fn _lookup_traditional_including_subslice(slice: &str) -> Vec<JsWordEntry> {
-  lookup_traditional_with_subslice(slice)
+pub fn _lookup_traditional_including_subslice(
+  slice: &str,
+  limit: usize,
+) -> Vec<JsWordEntry> {
+  CEDICT_DATA
+    .get_traditional_including_subslice(slice)
     .into_iter()
     .map(JsWordEntry::from)
-    .take(300)
+    .take(limit)
     .collect()
 }
 

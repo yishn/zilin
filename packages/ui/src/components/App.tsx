@@ -121,7 +121,7 @@ export const App: React.FunctionalComponent = () => {
             characterOf: (
               await (mode === "simplified"
                 ? tokenizer.lookupSimplifiedIncludingSubslice
-                : tokenizer.lookupTraditionalIncludingSubslice)(character)
+                : tokenizer.lookupTraditionalIncludingSubslice)(character, 100)
             )
               .map((entry) => entry[mode])
               .filter((word, i, arr) => i === 0 || word !== arr[i - 1]),
