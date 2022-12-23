@@ -1,24 +1,11 @@
-use once_cell::sync::Lazy;
-use std::io::{BufRead, BufReader};
-
-use crate::{character::lookup_character, trie::Trie};
+use crate::trie::Trie;
 
 pub const CHINESE_PUNCTUATION: &'static [char] = &[
   '·', '×', '—', '‘', '’', '“', '”', '…', '、', '。', '《', '》', '『', '』',
   '【', '】', '！', '（', '）', '，', '：', '；', '？',
 ];
 
-pub static CEDICT_DATA_GZ: &'static [u8] =
-  include_bytes!("../data/cedict_1_0_ts_utf-8_mdbg.txt.gz");
-
-pub static CEDICT_DATA: Lazy<Dictionary> = Lazy::new(|| {
-  let (reader, _) = niffler::get_reader(Box::new(CEDICT_DATA_GZ)).unwrap();
-  let buf_reader = BufReader::new(reader);
-
-  Dictionary::new(buf_reader.lines().map(|line| line.unwrap()))
-});
-
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, PartialEq, Eq, Clone)]
 pub struct WordEntry {
   pub traditional: String,
   pub simplified: String,
@@ -26,20 +13,27 @@ pub struct WordEntry {
   pub english: String,
 }
 
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct Token {
+  pub value: String,
+  pub offset: usize,
+  pub has_entries: bool,
+}
+
 #[derive(Debug, Clone)]
-pub struct Dictionary {
+pub struct WordDictionary {
   simplified: Trie<Vec<WordEntry>>,
   traditional: Trie<Vec<WordEntry>>,
 }
 
-impl Dictionary {
-  pub fn new(data: impl Iterator<Item = String>) -> Self {
+impl WordDictionary {
+  pub fn new(data: &str) -> Self {
     let mut result = Self {
       simplified: Trie::with_capacity(16_384),
       traditional: Trie::with_capacity(16_384),
     };
 
-    for line in data {
+    for line in data.lines() {
       let line = line.trim();
 
       if line.is_empty() || line.starts_with("#") {
@@ -130,12 +124,12 @@ impl Dictionary {
     self.iter_traditional_prefix("")
   }
 
-  fn get_words_including_subslice(
-    &self,
-    slice: &str,
+  fn get_words_including_subslice<'a>(
+    &'a self,
+    slice: &'a str,
     simplified: bool,
-  ) -> Vec<&WordEntry> {
-    let mut result = simplified
+  ) -> impl Iterator<Item = &'a WordEntry> + 'a {
+    simplified
       .then(|| self.iter_simplified())
       .into_iter()
       .flatten()
@@ -145,7 +139,7 @@ impl Dictionary {
           .into_iter()
           .flatten(),
       )
-      .filter(|entry| {
+      .filter(move |entry| {
         let word = if simplified {
           &entry.simplified
         } else {
@@ -154,147 +148,134 @@ impl Dictionary {
 
         word != slice && word.contains(slice)
       })
-      .collect::<Vec<_>>();
-
-    result.sort_by_cached_key(|entry| {
-      if simplified {
-        &entry.simplified
-      } else {
-        &entry.traditional
-      }
-      .chars()
-      .map(|ch| lookup_character(ch).map(|entry| entry.strokes))
-      .sum::<Option<usize>>()
-      .unwrap_or(usize::MAX)
-    });
-    result
   }
 
-  pub fn get_simplified_including_subslice(
-    &self,
-    slice: &str,
-  ) -> Vec<&WordEntry> {
+  pub fn get_simplified_including_subslice<'a>(
+    &'a self,
+    slice: &'a str,
+  ) -> impl Iterator<Item = &'a WordEntry> + 'a {
     self.get_words_including_subslice(slice, true)
   }
 
-  pub fn get_traditional_including_subslice(
-    &self,
-    slice: &str,
-  ) -> Vec<&WordEntry> {
+  pub fn get_traditional_including_subslice<'a>(
+    &'a self,
+    slice: &'a str,
+  ) -> impl Iterator<Item = &'a WordEntry> + 'a {
     self.get_words_including_subslice(slice, false)
   }
-}
 
-#[derive(Debug, Clone)]
-pub struct Token {
-  pub value: String,
-  pub offset: usize,
-  pub has_entries: bool,
-}
+  pub fn tokenize(&self, input: &str) -> Vec<Token> {
+    let mut chars = input.char_indices().peekable();
+    let mut tokens = vec![];
+    let mut offset = 0;
 
-pub fn tokenize(input: &str) -> Vec<Token> {
-  let mut chars = input.char_indices().peekable();
-  let mut tokens = vec![];
-  let mut offset = 0;
+    let mut push_token = |word: &str| {
+      tokens.push(Token {
+        value: word.to_string(),
+        offset,
+        has_entries: self.get_simplified(word).is_some()
+          || self.get_traditional(word).is_some(),
+      });
 
-  let mut push_token = |word: &str| {
-    tokens.push(Token {
-      value: word.to_string(),
-      offset,
-      has_entries: CEDICT_DATA.get_simplified(word).is_some()
-        || CEDICT_DATA.get_traditional(word).is_some(),
-    });
-
-    offset += word.chars().count();
-  };
-
-  while let Some((i, ch)) = chars.next() {
-    // First, try to match two or more characters
-
-    if let Some(&(_, next_ch)) = chars.peek() {
-      let sliced_input = &input[i..];
-      let prefix = [ch, next_ch].into_iter().collect::<String>();
-      let mut found_word = None::<&str>;
-
-      let entries = CEDICT_DATA
-        .iter_simplified_prefix(&prefix)
-        .chain(CEDICT_DATA.iter_traditional_prefix(&prefix));
-
-      for entry in entries {
-        let new_found_word = if sliced_input.starts_with(&entry.simplified) {
-          Some(&*entry.simplified)
-        } else if sliced_input.starts_with(&entry.traditional) {
-          Some(&*entry.traditional)
-        } else {
-          None
-        };
-
-        found_word = match (found_word, new_found_word) {
-          (Some(found_word), Some(new_found_word))
-            if found_word.len() < new_found_word.len() =>
-          {
-            Some(new_found_word)
-          }
-          (None, _) => new_found_word,
-          _ => found_word,
-        };
-      }
-
-      if let Some(found_word) = found_word {
-        push_token(found_word);
-
-        for _ in 0..found_word.chars().count() - 1 {
-          chars.next();
-        }
-
-        continue;
-      }
-    }
-
-    // Match exactly one Chinese character
-
-    let is_chinese = |ch: &char| {
-      !ch.is_ascii_alphanumeric()
-        && (CHINESE_PUNCTUATION.contains(&ch)
-          || CEDICT_DATA
-            .get_simplified(&ch.to_string())
-            .map(|vec| vec.len() > 0)
-            .unwrap_or(false)
-          || CEDICT_DATA
-            .get_traditional(&ch.to_string())
-            .map(|vec| vec.len() > 0)
-            .unwrap_or(false))
+      offset += word.chars().count();
     };
 
-    if ch.is_ascii_whitespace() || is_chinese(&ch) {
-      push_token(&ch.to_string());
-      continue;
-    }
+    while let Some((i, ch)) = chars.next() {
+      // First, try to match two or more characters
 
-    // Handle non-Chinese characters
+      if let Some(&(_, next_ch)) = chars.peek() {
+        let sliced_input = &input[i..];
+        let prefix = [ch, next_ch].into_iter().collect::<String>();
+        let mut found_word = None::<&str>;
 
-    let mut word = String::new();
+        let entries = self
+          .iter_simplified_prefix(&prefix)
+          .chain(self.iter_traditional_prefix(&prefix));
 
-    word.push(ch);
+        for entry in entries {
+          let new_found_word = if sliced_input.starts_with(&entry.simplified) {
+            Some(&*entry.simplified)
+          } else if sliced_input.starts_with(&entry.traditional) {
+            Some(&*entry.traditional)
+          } else {
+            None
+          };
 
-    while let Some((_, next_ch)) = chars.peek() {
-      if next_ch.is_ascii_whitespace() || is_chinese(next_ch) {
-        break;
+          found_word = match (found_word, new_found_word) {
+            (Some(found_word), Some(new_found_word))
+              if found_word.len() < new_found_word.len() =>
+            {
+              Some(new_found_word)
+            }
+            (None, _) => new_found_word,
+            _ => found_word,
+          };
+        }
+
+        if let Some(found_word) = found_word {
+          push_token(found_word);
+
+          for _ in 0..found_word.chars().count() - 1 {
+            chars.next();
+          }
+
+          continue;
+        }
       }
 
-      word.push(*next_ch);
-      chars.next();
+      // Match exactly one Chinese character
+
+      let is_chinese = |ch: &char| {
+        !ch.is_ascii_alphanumeric()
+          && (CHINESE_PUNCTUATION.contains(&ch)
+            || self
+              .get_simplified(&ch.to_string())
+              .map(|vec| vec.len() > 0)
+              .unwrap_or(false)
+            || self
+              .get_traditional(&ch.to_string())
+              .map(|vec| vec.len() > 0)
+              .unwrap_or(false))
+      };
+
+      if ch.is_ascii_whitespace() || is_chinese(&ch) {
+        push_token(&ch.to_string());
+        continue;
+      }
+
+      // Handle non-Chinese characters
+
+      let mut word = String::new();
+
+      word.push(ch);
+
+      while let Some((_, next_ch)) = chars.peek() {
+        if next_ch.is_ascii_whitespace() || is_chinese(next_ch) {
+          break;
+        }
+
+        word.push(*next_ch);
+        chars.next();
+      }
+
+      push_token(&word);
     }
 
-    push_token(&word);
+    tokens
   }
-
-  tokens
 }
 
 #[cfg(test)]
 mod tests {
-  use crate::dictionary::{tokenize, CEDICT_DATA};
+  use once_cell::sync::Lazy;
+
+  use super::WordDictionary;
+
+  static CEDICT_DATA: Lazy<WordDictionary> = Lazy::new(|| {
+    WordDictionary::new(include_str!(
+      "../../../data/cedict_1_0_ts_utf-8_mdbg.txt"
+    ))
+  });
 
   #[test]
   fn can_get_word_entry() {
@@ -323,7 +304,7 @@ mod tests {
 
   #[test]
   fn should_tokenize_simple_sentence() {
-    let tokens = tokenize("我是中国人。");
+    let tokens = CEDICT_DATA.tokenize("我是中国人。");
 
     assert_eq!(
       tokens.iter().map(|token| &token.value).collect::<Vec<_>>(),
@@ -333,7 +314,7 @@ mod tests {
 
   #[test]
   fn should_handle_non_chinese_characters_gracefully() {
-    let tokens = tokenize("我的名字叫David。");
+    let tokens = CEDICT_DATA.tokenize("我的名字叫David。");
 
     assert_eq!(
       tokens.iter().map(|token| &token.value).collect::<Vec<_>>(),

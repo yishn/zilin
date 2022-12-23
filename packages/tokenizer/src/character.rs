@@ -1,24 +1,10 @@
-use once_cell::sync::Lazy;
 use rustc_hash::FxHashMap as HashMap;
 use serde::{Deserialize, Serialize};
-use std::io::{BufRead, BufReader};
-
-use crate::dictionary::CEDICT_DATA;
 
 pub const BINARY_DECOMPOSITION_TYPES: &[char] =
   &['⿰', '⿱', '⿴', '⿵', '⿶', '⿷', '⿸', '⿹', '⿺', '⿻'];
 
 pub const TRINARY_DECOMPOSITION_TYPES: &[char] = &['⿲', '⿳'];
-
-pub static CHARACTER_DATA_GZ: &'static [u8] =
-  include_bytes!("../data/dictionary.txt.gz");
-
-pub static CHARACTER_DATA: Lazy<Dictionary> = Lazy::new(|| {
-  let (reader, _) = niffler::get_reader(Box::new(CHARACTER_DATA_GZ)).unwrap();
-  let buf_reader = BufReader::new(reader);
-
-  Dictionary::new(buf_reader.lines().map(|line| line.unwrap()))
-});
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CharacterEtymology {
@@ -44,19 +30,20 @@ pub struct CharacterEntry {
 }
 
 #[derive(Debug, Clone)]
-pub struct Dictionary {
+pub struct CharacterDictionary {
   data: HashMap<char, CharacterEntry>,
 }
 
-impl Dictionary {
-  pub fn new(data: impl Iterator<Item = String>) -> Self {
+impl CharacterDictionary {
+  pub fn new(data: &str) -> Self {
     let mut map = HashMap::with_capacity_and_hasher(16_384, Default::default());
 
-    for line in data {
-      let mut entry = serde_json::from_str::<CharacterEntry>(&line).unwrap();
-      entry.strokes = entry.matches.len();
+    for line in data.lines() {
+      if let Ok(mut entry) = serde_json::from_str::<CharacterEntry>(line) {
+        entry.strokes = entry.matches.len();
 
-      map.insert(entry.character, entry);
+        map.insert(entry.character, entry);
+      }
     }
 
     Self { data: map }
@@ -66,56 +53,82 @@ impl Dictionary {
     self.data.get(&character)
   }
 
+  pub fn stroke_count(&self, characters: &str) -> Option<usize> {
+    characters
+      .chars()
+      .map(|ch| self.get(ch).map(|entry| entry.strokes))
+      .sum::<Option<_>>()
+  }
+
   pub fn iter(&self) -> impl Iterator<Item = &CharacterEntry> + '_ {
     self.data.values()
   }
-}
 
-pub fn lookup_character(character: char) -> Option<&'static CharacterEntry> {
-  CHARACTER_DATA.get(character)
-}
+  pub fn lookup_characters_including_component(
+    &self,
+    component: char,
+  ) -> impl Iterator<Item = &CharacterEntry> {
+    self
+      .iter()
+      .filter(move |entry| entry.character != component)
+      .filter(move |entry| {
+        self
+          .decompose(entry.character)
+          .iter_parts()
+          .any(|ch| ch == component)
+      })
+  }
 
-fn lookup_characters_including_component(
-  component: char,
-  simplified: bool,
-) -> Vec<&'static CharacterEntry> {
-  let mut result = CHARACTER_DATA
-    .iter()
-    .filter(|entry| entry.character != component)
-    .filter(|entry| {
-      decompose(entry.character)
-        .iter_parts()
-        .any(|ch| ch == component)
-    })
-    .filter(|entry| {
-      let word = entry.character.to_string();
-
-      if simplified {
-        CEDICT_DATA.get_simplified(&word)
-      } else {
-        CEDICT_DATA.get_traditional(&word)
+  pub fn decompose(&self, character: char) -> CharacterDecomposition {
+    fn inner(
+      dict: &CharacterDictionary,
+      value: Option<char>,
+      tokens: &mut dyn Iterator<Item = char>,
+    ) -> CharacterDecomposition {
+      if let Some(token) = tokens.next() {
+        if token == '？' {
+          return CharacterDecomposition::Unknown;
+        } else if BINARY_DECOMPOSITION_TYPES.contains(&token)
+          || TRINARY_DECOMPOSITION_TYPES.contains(&token)
+        {
+          return CharacterDecomposition::Components {
+            ty: token,
+            value,
+            components: if TRINARY_DECOMPOSITION_TYPES.contains(&token) {
+              vec![
+                inner(dict, None, tokens),
+                inner(dict, None, tokens),
+                inner(dict, None, tokens),
+              ]
+            } else {
+              vec![inner(dict, None, tokens), inner(dict, None, tokens)]
+            },
+          };
+        } else {
+          return match dict.decompose(token) {
+            CharacterDecomposition::Unknown => {
+              CharacterDecomposition::Radical(token)
+            }
+            decomposition => decomposition,
+          };
+        }
       }
-      .is_some()
-    })
-    .collect::<Vec<_>>();
 
-  result.sort_by_key(|entry| entry.strokes);
-  result
+      CharacterDecomposition::Unknown
+    }
+
+    inner(
+      &self,
+      Some(character),
+      &mut self
+        .get(character)
+        .into_iter()
+        .flat_map(|entry| entry.decomposition.chars()),
+    )
+  }
 }
 
-pub fn lookup_simplified_characters_including_component(
-  component: char,
-) -> Vec<&'static CharacterEntry> {
-  lookup_characters_including_component(component, true)
-}
-
-pub fn lookup_traditional_characters_including_component(
-  component: char,
-) -> Vec<&'static CharacterEntry> {
-  lookup_characters_including_component(component, false)
-}
-
-#[derive(Debug, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum CharacterDecomposition {
   Unknown,
   Radical(char),
@@ -159,55 +172,15 @@ impl CharacterDecomposition {
   }
 }
 
-pub fn decompose(character: char) -> CharacterDecomposition {
-  fn inner(
-    value: Option<char>,
-    tokens: &mut dyn Iterator<Item = char>,
-  ) -> CharacterDecomposition {
-    if let Some(token) = tokens.next() {
-      if token == '？' {
-        return CharacterDecomposition::Unknown;
-      } else if BINARY_DECOMPOSITION_TYPES.contains(&token)
-        || TRINARY_DECOMPOSITION_TYPES.contains(&token)
-      {
-        return CharacterDecomposition::Components {
-          ty: token,
-          value,
-          components: if TRINARY_DECOMPOSITION_TYPES.contains(&token) {
-            vec![
-              inner(None, tokens),
-              inner(None, tokens),
-              inner(None, tokens),
-            ]
-          } else {
-            vec![inner(None, tokens), inner(None, tokens)]
-          },
-        };
-      } else {
-        return match decompose(token) {
-          CharacterDecomposition::Unknown => {
-            CharacterDecomposition::Radical(token)
-          }
-          decomposition => decomposition,
-        };
-      }
-    }
-
-    CharacterDecomposition::Unknown
-  }
-
-  inner(
-    Some(character),
-    &mut CHARACTER_DATA
-      .get(character)
-      .into_iter()
-      .flat_map(|entry| entry.decomposition.chars()),
-  )
-}
-
 #[cfg(test)]
 mod tests {
-  use super::CHARACTER_DATA;
+  use once_cell::sync::Lazy;
+
+  use super::CharacterDictionary;
+
+  static CHARACTER_DATA: Lazy<CharacterDictionary> = Lazy::new(|| {
+    CharacterDictionary::new(include_str!("../../../data/dictionary.txt"))
+  });
 
   #[test]
   fn should_be_able_to_parse_dictionary_data() {
