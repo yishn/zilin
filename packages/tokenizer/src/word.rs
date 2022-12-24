@@ -1,3 +1,5 @@
+use serde::Serialize;
+
 use crate::trie::Trie;
 
 pub const CHINESE_PUNCTUATION: &'static [char] = &[
@@ -5,7 +7,7 @@ pub const CHINESE_PUNCTUATION: &'static [char] = &[
   '【', '】', '！', '（', '）', '，', '：', '；', '？',
 ];
 
-#[derive(Debug, Default, PartialEq, Eq, Clone)]
+#[derive(Debug, Default, PartialEq, Eq, Clone, Serialize)]
 pub struct WordEntry {
   pub traditional: String,
   pub simplified: String,
@@ -13,10 +15,11 @@ pub struct WordEntry {
   pub english: String,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 pub struct Token {
   pub value: String,
   pub offset: usize,
+  #[serde(rename = "hasEntries")]
   pub has_entries: bool,
 }
 

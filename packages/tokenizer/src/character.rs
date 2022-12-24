@@ -19,7 +19,6 @@ pub struct CharacterEtymology {
 pub struct CharacterEntry {
   pub character: char,
   pub definition: Option<String>,
-  pub pinyin: Vec<String>,
   #[serde(skip_serializing)]
   pub decomposition: String,
   pub etymology: Option<CharacterEtymology>,
@@ -128,11 +127,13 @@ impl CharacterDictionary {
   }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
+#[serde(untagged)]
 pub enum CharacterDecomposition {
   Unknown,
   Radical(char),
   Components {
+    #[serde(rename = "type")]
     ty: char,
     value: Option<char>,
     components: Vec<CharacterDecomposition>,

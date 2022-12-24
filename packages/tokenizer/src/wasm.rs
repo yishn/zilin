@@ -42,7 +42,7 @@ const TYPESCRIPT_TYPES: &'static str = r#"
   }
 
   export type CharacterDecomposition =
-    | null
+    | undefined
     | string
     | {
       type: string;
@@ -51,7 +51,7 @@ const TYPESCRIPT_TYPES: &'static str = r#"
     };
 "#;
 
-#[wasm_bindgen(module = "/js/util.js")]
+#[wasm_bindgen]
 extern "C" {
   #[wasm_bindgen(typescript_type = "Token")]
   pub type JsToken;
@@ -73,74 +73,29 @@ extern "C" {
 
   #[wasm_bindgen(typescript_type = "CharacterDecomposition")]
   pub type JsCharacterDecomposition;
-
-  #[wasm_bindgen(js_name = "createToken")]
-  fn create_token(value: &str, offset: usize, has_entries: bool) -> JsToken;
-
-  #[wasm_bindgen(js_name = "createWordEntry")]
-  fn create_word_entry(
-    traditional: &str,
-    simplified: &str,
-    pinyin: &str,
-    english: &str,
-  ) -> JsWordEntry;
-
-  #[wasm_bindgen(js_name = "createCharacterEntry")]
-  fn create_character_entry(data: &str) -> JsCharacterEntry;
-
-  #[wasm_bindgen(js_name = "createDecomposition")]
-  fn create_decomposition(
-    value: Option<char>,
-    ty: Option<char>,
-    parts: Vec<JsCharacterDecomposition>,
-  ) -> JsCharacterDecomposition;
 }
 
 impl<'a> From<&'a Token> for JsToken {
   fn from(value: &'a Token) -> Self {
-    create_token(&value.value, value.offset, value.has_entries)
+    serde_wasm_bindgen::to_value(value).unwrap_throw().into()
   }
 }
 
 impl<'a> From<&'a WordEntry> for JsWordEntry {
   fn from(value: &'a WordEntry) -> Self {
-    create_word_entry(
-      &value.traditional,
-      &value.simplified,
-      &value.pinyin,
-      &value.english,
-    )
+    serde_wasm_bindgen::to_value(value).unwrap_throw().into()
   }
 }
 
 impl<'a> From<&'a CharacterEntry> for JsCharacterEntry {
   fn from(value: &'a CharacterEntry) -> Self {
-    create_character_entry(&serde_json::to_string(value).unwrap_throw())
+    serde_wasm_bindgen::to_value(value).unwrap_throw().into()
   }
 }
 
 impl<'a> From<&'a CharacterDecomposition> for JsCharacterDecomposition {
   fn from(value: &'a CharacterDecomposition) -> Self {
-    match value {
-      CharacterDecomposition::Unknown => {
-        create_decomposition(None, None, vec![])
-      }
-      CharacterDecomposition::Radical(value) => {
-        create_decomposition(Some(*value), None, vec![])
-      }
-      CharacterDecomposition::Components {
-        ty,
-        value,
-        components,
-      } => create_decomposition(
-        *value,
-        Some(*ty),
-        components
-          .iter()
-          .map(JsCharacterDecomposition::from)
-          .collect(),
-      ),
-    }
+    serde_wasm_bindgen::to_value(value).unwrap_throw().into()
   }
 }
 
