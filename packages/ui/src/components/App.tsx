@@ -1,7 +1,7 @@
 import * as React from "preact";
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { prettify as pp } from "prettify-pinyin";
-import { getTokenizer } from "../tokenizer.ts";
+import { getWasmWorker } from "../worker.ts";
 import { useAsync } from "../hooks/useAsync.ts";
 import { TokenTextarea, Token } from "./TokenTextarea.tsx";
 import { DictionaryCharacterInfo, DictionaryPane } from "./DictionaryPane.tsx";
@@ -32,7 +32,7 @@ function prettifyExplanation(input: string): string {
 }
 
 export const App: React.FunctionalComponent = () => {
-  const tokenizer = getTokenizer();
+  const tokenizer = getWasmWorker();
 
   const [mode, setMode] = useState<ModeValue>("simplified");
   const [input, setInput] = useState("");
@@ -105,8 +105,9 @@ export const App: React.FunctionalComponent = () => {
     async () =>
       await Promise.all(
         [
-          ...((dictionaryEntries.value?.[mode].length ?? 0) > 0 &&
-          highlight != null
+          ...(((dictionaryEntries.value ?? dictionaryEntries.previousValue)?.[
+            mode
+          ].length ?? 0) > 0 && highlight != null
             ? highlight
             : ""),
         ].map<Promise<DictionaryCharacterInfo>>(async (character) => {
@@ -145,7 +146,11 @@ export const App: React.FunctionalComponent = () => {
           };
         })
       ),
-    [mode, highlight, dictionaryEntries.value]
+    [
+      mode,
+      highlight,
+      dictionaryEntries.value ?? dictionaryEntries.previousValue,
+    ]
   );
 
   useEffect(

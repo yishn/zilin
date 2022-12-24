@@ -1,56 +1,54 @@
-// @deno-types="../../tokenizer/pkg/chinese_tokenizer.d.ts"
-import init, {
-  Wasm as Tokenizer,
-} from "../../tokenizer/pkg/chinese_tokenizer.js";
+import type {
+  RequestBody,
+  ResponseBody,
+  Worker as WasmWorker,
+} from "../../tokenizer/src/worker.ts";
 
-export type { Tokenizer };
+type Promisified<T> = {
+  [K in keyof T]: T[K] extends (...args: any) => any
+    ? (...args: Parameters<T[K]>) => Promise<Awaited<ReturnType<T[K]>>>
+    : never;
+};
 
-export interface RequestBody {
-  id: number;
-  fn: keyof Tokenizer;
-  args?: unknown[];
+const worker = new Worker("./packages/tokenizer/dist/worker.js", {
+  type: "module",
+});
+
+let wasmWorker: Promisified<WasmWorker>;
+
+export function getWasmWorker(): Promisified<WasmWorker> {
+  if (wasmWorker != null) return wasmWorker;
+
+  let id = 0;
+
+  return (wasmWorker = new Proxy(
+    {},
+    {
+      get(_, key: keyof WasmWorker) {
+        return (...args: unknown[]) =>
+          new Promise((resolve, reject) => {
+            const currentId = id++;
+
+            const handleMessage = (evt: MessageEvent<ResponseBody>) => {
+              if (evt.data.id === currentId) {
+                worker.removeEventListener("message", handleMessage);
+
+                if (evt.data.err != null) reject(evt.data.err);
+                else resolve(evt.data.result);
+              }
+            };
+
+            worker.addEventListener("message", handleMessage);
+
+            const msg: RequestBody = {
+              id: currentId,
+              fn: key,
+              args,
+            };
+
+            worker.postMessage(msg);
+          });
+      },
+    }
+  ) as Promisified<WasmWorker>);
 }
-
-export type ResponseBody = { id: number } & (
-  | {
-      err: Error;
-      result?: undefined;
-    }
-  | {
-      err?: undefined;
-      result: unknown;
-    }
-);
-
-const tokenizer = init("../../tokenizer/pkg/chinese_tokenizer_bg.wasm").then(
-  () =>
-    new Tokenizer(
-      fetch("../../../data/cedict_1_0_ts_utf-8_mdbg.txt").then((res) =>
-        res.text()
-      ),
-      fetch("../../../data/dictionary.txt").then((res) => res.text())
-    )
-);
-
-globalThis.addEventListener(
-  "message",
-  async (evt: MessageEvent<RequestBody>) => {
-    try {
-      const result = await (
-        (
-          await tokenizer
-        )[evt.data.fn] as (...args: unknown[]) => unknown
-      )(...(evt.data.args ?? []));
-
-      postMessage({
-        id: evt.data.id,
-        result,
-      });
-    } catch (err) {
-      postMessage({
-        id: evt.data.id,
-        err,
-      });
-    }
-  }
-);

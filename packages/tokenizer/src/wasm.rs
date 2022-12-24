@@ -100,16 +100,16 @@ impl<'a> From<&'a CharacterDecomposition> for JsCharacterDecomposition {
 }
 
 #[wasm_bindgen]
-pub struct Wasm {
+pub struct Worker {
   word_dict: (Promise, OnceCell<WordDictionary>),
   character_dict: (Promise, OnceCell<CharacterDictionary>),
 }
 
 #[wasm_bindgen]
-impl Wasm {
+impl Worker {
   #[wasm_bindgen(constructor)]
-  pub fn new(word_dict_data: Promise, character_dict_data: Promise) -> Wasm {
-    Wasm {
+  pub fn new(word_dict_data: Promise, character_dict_data: Promise) -> Worker {
+    Worker {
       word_dict: (word_dict_data, OnceCell::new()),
       character_dict: (character_dict_data, OnceCell::new()),
     }
