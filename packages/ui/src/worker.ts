@@ -1,5 +1,9 @@
-export type Tokenizer =
-  typeof import("../../tokenizer/pkg/chinese_tokenizer.d.ts");
+// @deno-types="../../tokenizer/pkg/chinese_tokenizer.d.ts"
+import init, {
+  Wasm as Tokenizer,
+} from "../../tokenizer/pkg/chinese_tokenizer.js";
+
+export type { Tokenizer };
 
 export interface RequestBody {
   id: number;
@@ -7,33 +11,36 @@ export interface RequestBody {
   args?: unknown[];
 }
 
-export type ResponseBody =
-  & { id: number }
-  & ({
-    err: Error;
-    result?: undefined;
-  } | {
-    err?: undefined;
-    result: unknown;
-  });
+export type ResponseBody = { id: number } & (
+  | {
+      err: Error;
+      result?: undefined;
+    }
+  | {
+      err?: undefined;
+      result: unknown;
+    }
+);
 
-const tokenizer = import(
-  "../../tokenizer/pkg/chinese_tokenizer.js"
-).then(async (t: Tokenizer) => {
-  await t.default();
-  return t;
-});
+const tokenizer = init("../../tokenizer/pkg/chinese_tokenizer_bg.wasm").then(
+  () =>
+    new Tokenizer(
+      fetch("../../../data/cedict_1_0_ts_utf-8_mdbg.txt").then((res) =>
+        res.text()
+      ),
+      fetch("../../../data/dictionary.txt").then((res) => res.text())
+    )
+);
 
 globalThis.addEventListener(
   "message",
-  async (
-    evt: MessageEvent<RequestBody>,
-  ) => {
+  async (evt: MessageEvent<RequestBody>) => {
     try {
-      const result =
-        ((await tokenizer)[evt.data.fn] as (...args: unknown[]) => unknown)(
-          ...evt.data.args ?? [],
-        );
+      const result = await (
+        (
+          await tokenizer
+        )[evt.data.fn] as (...args: unknown[]) => unknown
+      )(...(evt.data.args ?? []));
 
       postMessage({
         id: evt.data.id,
@@ -45,5 +52,5 @@ globalThis.addEventListener(
         err,
       });
     }
-  },
+  }
 );

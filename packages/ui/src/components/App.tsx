@@ -13,12 +13,22 @@ function prettifyPinyin(pinyin: string): string {
 }
 
 function prettifyExplanation(input: string): string {
-  return input
-    .replaceAll("/", " / ")
-    .replaceAll("|", " | ")
-    .replaceAll(",", ", ")
-    .replace(/\[([^\]]*)\]/g, (_, pinyin) => ` [${prettifyPinyin(pinyin)}]`)
-    .replaceAll(":", ": ");
+  return (
+    input
+      .replace(/\[([^\]]*)\]/g, (_, pinyin) => ` [${prettifyPinyin(pinyin)}]`)
+      // Add spaces around delimiters
+      .replaceAll("/", " / ")
+      .replaceAll("|", " | ")
+      .replaceAll(",", ", ")
+      .replaceAll(":", ": ")
+      // Use correct typography
+      .replace(/\.{3}/g, "…")
+      .replace(/(\S)('|´)/g, "$1’")
+      .replace(/(\S)"/g, "$1”")
+      .replace(/('|`)(\S)/g, "‘$2")
+      .replace(/"(\S)/g, "“$1")
+      .replace(/(\s)-(\s)/g, "$1–$2")
+  );
 }
 
 export const App: React.FunctionalComponent = () => {

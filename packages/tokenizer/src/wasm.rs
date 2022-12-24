@@ -1,20 +1,12 @@
-use once_cell::sync::Lazy;
-use wasm_bindgen::{prelude::wasm_bindgen, UnwrapThrowExt};
+use js_sys::{Array, Promise};
+use once_cell::unsync::OnceCell;
+use wasm_bindgen::{prelude::wasm_bindgen, JsValue, UnwrapThrowExt};
+use wasm_bindgen_futures::JsFuture;
 
 use crate::{
   character::{CharacterDecomposition, CharacterDictionary, CharacterEntry},
   word::{Token, WordDictionary, WordEntry},
 };
-
-static CEDICT_DATA: Lazy<WordDictionary> = Lazy::new(|| {
-  WordDictionary::new(include_str!(
-    "../../../data/cedict_1_0_ts_utf-8_mdbg.txt"
-  ))
-});
-
-static CHARACTER_DATA: Lazy<CharacterDictionary> = Lazy::new(|| {
-  CharacterDictionary::new(include_str!("../../../data/dictionary.txt"))
-});
 
 #[wasm_bindgen(typescript_custom_section)]
 const TYPESCRIPT_TYPES: &'static str = r#"
@@ -64,11 +56,20 @@ extern "C" {
   #[wasm_bindgen(typescript_type = "Token")]
   pub type JsToken;
 
+  #[wasm_bindgen(typescript_type = "Token[]")]
+  pub type JsTokenArray;
+
   #[wasm_bindgen(typescript_type = "WordEntry")]
   pub type JsWordEntry;
 
+  #[wasm_bindgen(typescript_type = "WordEntry[]")]
+  pub type JsWordEntryArray;
+
   #[wasm_bindgen(typescript_type = "CharacterEntry")]
   pub type JsCharacterEntry;
+
+  #[wasm_bindgen(typescript_type = "CharacterEntry[]")]
+  pub type JsCharacterEntryArray;
 
   #[wasm_bindgen(typescript_type = "CharacterDecomposition")]
   pub type JsCharacterDecomposition;
@@ -143,129 +144,214 @@ impl<'a> From<&'a CharacterDecomposition> for JsCharacterDecomposition {
   }
 }
 
-#[wasm_bindgen(js_name = "tokenize")]
-pub fn _tokenize(input: &str) -> Vec<JsToken> {
-  let tokens = CEDICT_DATA.tokenize(input);
-
-  tokens.iter().map(JsToken::from).collect()
+#[wasm_bindgen]
+pub struct Wasm {
+  word_dict: (Promise, OnceCell<WordDictionary>),
+  character_dict: (Promise, OnceCell<CharacterDictionary>),
 }
 
-#[wasm_bindgen(js_name = "lookupSimplified")]
-pub fn _lookup_simplified(word: &str) -> Vec<JsWordEntry> {
-  CEDICT_DATA
-    .get_simplified(word)
-    .map(|entries| entries.iter().map(JsWordEntry::from).collect())
-    .unwrap_or_default()
-}
+#[wasm_bindgen]
+impl Wasm {
+  #[wasm_bindgen(constructor)]
+  pub fn new(word_dict_data: Promise, character_dict_data: Promise) -> Wasm {
+    Wasm {
+      word_dict: (word_dict_data, OnceCell::new()),
+      character_dict: (character_dict_data, OnceCell::new()),
+    }
+  }
 
-#[wasm_bindgen(js_name = "lookupTraditional")]
-pub fn _lookup_traditional(word: &str) -> Vec<JsWordEntry> {
-  CEDICT_DATA
-    .get_traditional(word)
-    .map(|entries| entries.iter().map(JsWordEntry::from).collect())
-    .unwrap_or_default()
-}
+  async fn get_word_dictionary(&self) -> &WordDictionary {
+    if self.word_dict.1.get().is_none() {
+      let data = JsFuture::from(self.word_dict.0.clone())
+        .await
+        .ok()
+        .and_then(|result| result.as_string())
+        .unwrap_or_default();
 
-#[wasm_bindgen(js_name = "lookupSimplifiedIncludingSubslice")]
-pub fn _lookup_simplified_including_subslice(
-  slice: &str,
-  limit: usize,
-) -> Vec<JsWordEntry> {
-  let mut result = CEDICT_DATA
-    .iter_simplified_including_subslice(slice)
-    .map(|entry| {
-      (
-        CHARACTER_DATA
-          .stroke_count(&entry.simplified)
-          .unwrap_or(usize::MAX),
-        JsWordEntry::from(entry),
-      )
-    })
-    .take(limit)
-    .collect::<Vec<_>>();
+      self.word_dict.1.set(WordDictionary::new(&data)).ok();
+    }
 
-  result.sort_by_key(|x| x.0);
-  result.into_iter().map(|x| x.1).collect()
-}
+    self.word_dict.1.get().unwrap_throw()
+  }
 
-#[wasm_bindgen(js_name = "lookupTraditionalIncludingSubslice")]
-pub fn _lookup_traditional_including_subslice(
-  slice: &str,
-  limit: usize,
-) -> Vec<JsWordEntry> {
-  let mut result = CEDICT_DATA
-    .iter_traditional_including_subslice(slice)
-    .map(|entry| {
-      (
-        CHARACTER_DATA
-          .stroke_count(&entry.traditional)
-          .unwrap_or(usize::MAX),
-        JsWordEntry::from(entry),
-      )
-    })
-    .take(limit)
-    .collect::<Vec<_>>();
+  async fn get_character_dictionary(&self) -> &CharacterDictionary {
+    if self.character_dict.1.get().is_none() {
+      let data = JsFuture::from(self.character_dict.0.clone())
+        .await
+        .ok()
+        .and_then(|result| result.as_string())
+        .unwrap_or_default();
 
-  result.sort_by_key(|x| x.0);
-  result.into_iter().map(|x| x.1).collect()
-}
+      self
+        .character_dict
+        .1
+        .set(CharacterDictionary::new(&data))
+        .ok();
+    }
 
-#[wasm_bindgen(js_name = "lookupCharacter")]
-pub fn _lookup_character(character: char) -> Option<JsCharacterEntry> {
-  CHARACTER_DATA.get(character).map(JsCharacterEntry::from)
-}
+    self.character_dict.1.get().unwrap_throw()
+  }
 
-#[wasm_bindgen(js_name = "lookupSimplifiedCharactersIncludingComponent")]
-pub fn _lookup_simplified_characters_including_component(
-  component: char,
-) -> Vec<JsCharacterEntry> {
-  let mut result = CHARACTER_DATA
-    .lookup_characters_including_component(component)
-    .filter(|entry| {
-      CEDICT_DATA
-        .get_simplified(&entry.character.to_string())
-        .is_some()
-    })
-    .map(|entry| {
-      (
-        CHARACTER_DATA
-          .stroke_count(&entry.character.to_string())
-          .unwrap_or(usize::MAX),
-        JsCharacterEntry::from(entry),
-      )
-    })
-    .collect::<Vec<_>>();
+  pub async fn tokenize(&self, input: &str) -> JsTokenArray {
+    let tokens = self.get_word_dictionary().await.tokenize(input);
 
-  result.sort_by_key(|x| x.0);
-  result.into_iter().map(|x| x.1).collect()
-}
+    JsValue::from(tokens.iter().map(JsToken::from).collect::<Array>()).into()
+  }
 
-#[wasm_bindgen(js_name = "lookupTraditionalCharactersIncludingComponent")]
-pub fn _lookup_traditional_characters_including_component(
-  component: char,
-) -> Vec<JsCharacterEntry> {
-  let mut result = CHARACTER_DATA
-    .lookup_characters_including_component(component)
-    .filter(|entry| {
-      CEDICT_DATA
-        .get_traditional(&entry.character.to_string())
-        .is_some()
-    })
-    .map(|entry| {
-      (
-        CHARACTER_DATA
-          .stroke_count(&entry.character.to_string())
-          .unwrap_or(usize::MAX),
-        JsCharacterEntry::from(entry),
-      )
-    })
-    .collect::<Vec<_>>();
+  #[wasm_bindgen(js_name = "lookupSimplified")]
+  pub async fn lookup_simplified(&self, word: &str) -> JsWordEntryArray {
+    JsValue::from(
+      self
+        .get_word_dictionary()
+        .await
+        .get_simplified(word)
+        .map(|entries| entries.iter().map(JsWordEntry::from).collect::<Array>())
+        .unwrap_or_default(),
+    )
+    .into()
+  }
 
-  result.sort_by_key(|x| x.0);
-  result.into_iter().map(|x| x.1).collect()
-}
+  #[wasm_bindgen(js_name = "lookupTraditional")]
+  pub async fn lookup_traditional(&self, word: &str) -> JsWordEntryArray {
+    JsValue::from(
+      self
+        .get_word_dictionary()
+        .await
+        .get_traditional(word)
+        .map(|entries| entries.iter().map(JsWordEntry::from).collect::<Array>())
+        .unwrap_or_default(),
+    )
+    .into()
+  }
 
-#[wasm_bindgen(js_name = "decompose")]
-pub fn _decompose(character: char) -> JsCharacterDecomposition {
-  JsCharacterDecomposition::from(&CHARACTER_DATA.decompose(character))
+  #[wasm_bindgen(js_name = "lookupSimplifiedIncludingSubslice")]
+  pub async fn lookup_simplified_including_subslice(
+    &self,
+    slice: &str,
+    limit: usize,
+  ) -> JsWordEntryArray {
+    let character_dictionary = self.get_character_dictionary().await;
+
+    let mut result = self
+      .get_word_dictionary()
+      .await
+      .iter_simplified_including_subslice(slice)
+      .map(|entry| {
+        (
+          character_dictionary
+            .stroke_count(&entry.simplified)
+            .unwrap_or(usize::MAX),
+          JsWordEntry::from(entry),
+        )
+      })
+      .take(limit)
+      .collect::<Vec<_>>();
+
+    result.sort_by_key(|x| x.0);
+    JsValue::from(result.into_iter().map(|x| x.1).collect::<Array>()).into()
+  }
+
+  #[wasm_bindgen(js_name = "lookupTraditionalIncludingSubslice")]
+  pub async fn lookup_traditional_including_subslice(
+    &self,
+    slice: &str,
+    limit: usize,
+  ) -> JsWordEntryArray {
+    let character_dictionary = self.get_character_dictionary().await;
+
+    let mut result = self
+      .get_word_dictionary()
+      .await
+      .iter_traditional_including_subslice(slice)
+      .map(|entry| {
+        (
+          character_dictionary
+            .stroke_count(&entry.traditional)
+            .unwrap_or(usize::MAX),
+          JsWordEntry::from(entry),
+        )
+      })
+      .take(limit)
+      .collect::<Vec<_>>();
+
+    result.sort_by_key(|x| x.0);
+    JsValue::from(result.into_iter().map(|x| x.1).collect::<Array>()).into()
+  }
+
+  #[wasm_bindgen(js_name = "lookupCharacter")]
+  pub async fn lookup_character(
+    &self,
+    character: char,
+  ) -> Option<JsCharacterEntry> {
+    self
+      .get_character_dictionary()
+      .await
+      .get(character)
+      .map(JsCharacterEntry::from)
+  }
+
+  #[wasm_bindgen(js_name = "lookupSimplifiedCharactersIncludingComponent")]
+  pub async fn lookup_simplified_characters_including_component(
+    &self,
+    component: char,
+  ) -> JsCharacterEntryArray {
+    let word_dictionary = self.get_word_dictionary().await;
+    let character_dictionary = self.get_character_dictionary().await;
+
+    let mut result = character_dictionary
+      .lookup_characters_including_component(component)
+      .filter(|entry| {
+        word_dictionary
+          .get_simplified(&entry.character.to_string())
+          .is_some()
+      })
+      .map(|entry| {
+        (
+          character_dictionary
+            .stroke_count(&entry.character.to_string())
+            .unwrap_or(usize::MAX),
+          JsCharacterEntry::from(entry),
+        )
+      })
+      .collect::<Vec<_>>();
+
+    result.sort_by_key(|x| x.0);
+    JsValue::from(result.into_iter().map(|x| x.1).collect::<Array>()).into()
+  }
+
+  #[wasm_bindgen(js_name = "lookupTraditionalCharactersIncludingComponent")]
+  pub async fn lookup_traditional_characters_including_component(
+    &self,
+    component: char,
+  ) -> JsCharacterEntryArray {
+    let word_dictionary = self.get_word_dictionary().await;
+    let character_dictionary = self.get_character_dictionary().await;
+
+    let mut result = character_dictionary
+      .lookup_characters_including_component(component)
+      .filter(|entry| {
+        word_dictionary
+          .get_traditional(&entry.character.to_string())
+          .is_some()
+      })
+      .map(|entry| {
+        (
+          character_dictionary
+            .stroke_count(&entry.character.to_string())
+            .unwrap_or(usize::MAX),
+          JsCharacterEntry::from(entry),
+        )
+      })
+      .collect::<Vec<_>>();
+
+    result.sort_by_key(|x| x.0);
+    JsValue::from(result.into_iter().map(|x| x.1).collect::<Array>()).into()
+  }
+
+  #[wasm_bindgen(js_name = "decompose")]
+  pub async fn decompose(&self, character: char) -> JsCharacterDecomposition {
+    JsCharacterDecomposition::from(
+      &self.get_character_dictionary().await.decompose(character),
+    )
+  }
 }
