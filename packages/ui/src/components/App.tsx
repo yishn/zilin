@@ -39,9 +39,7 @@ export const App: React.FunctionalComponent = () => {
   const [highlight, setHighlight] = useState<string>();
 
   const lookup = async (word: string, mode: ModeValue) =>
-    mode === "simplified"
-      ? await tokenizer.lookupSimplified(word)
-      : await tokenizer.lookupTraditional(word);
+    await tokenizer.lookupWord(word, mode === "simplified");
 
   const tokensTimeout = useRef<number | undefined>(undefined);
   const tokens = useAsync(async () => {
@@ -57,8 +55,8 @@ export const App: React.FunctionalComponent = () => {
       value: token.value,
       pronunciation: async () => {
         const entries = [
-          ...(await tokenizer.lookupSimplified(token.value)),
-          ...(await tokenizer.lookupTraditional(token.value)),
+          ...(await tokenizer.lookupWord(token.value, true)),
+          ...(await tokenizer.lookupWord(token.value, false)),
         ];
 
         return [...new Set(entries.map((entry) => entry.pinyin))]
@@ -128,18 +126,19 @@ export const App: React.FunctionalComponent = () => {
                 ? characterInfo?.etymology?.hint
                 : undefined,
             componentOf: (
-              await (mode === "simplified"
-                ? tokenizer.lookupSimplifiedCharactersIncludingComponent
-                : tokenizer.lookupTraditionalCharactersIncludingComponent)(
-                character
+              await tokenizer.lookupCharactersIncludingComponent(
+                character,
+                mode === "simplified"
               )
             )
               .map((entry) => entry.character)
               .filter((word, i, arr) => i === 0 || word !== arr[i - 1]),
             characterOf: (
-              await (mode === "simplified"
-                ? tokenizer.lookupSimplifiedIncludingSubslice
-                : tokenizer.lookupTraditionalIncludingSubslice)(character, 100)
+              await tokenizer.lookupWordsIncludingSubslice(
+                character,
+                100,
+                mode === "simplified"
+              )
             )
               .map((entry) => entry[mode])
               .filter((word, i, arr) => i === 0 || word !== arr[i - 1]),
