@@ -1,4 +1,2 @@
 [workspace]
-members = [
-  "packages/tokenizer"
-]
+members = ["packages/worker"]
