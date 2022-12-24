@@ -1,5 +1,5 @@
 [package]
-name = "chinese-tokenizer"
+name = "zilin-worker"
 version = "0.1.0"
 edition = "2021"
 

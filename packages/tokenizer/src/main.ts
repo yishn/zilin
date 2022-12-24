@@ -1,5 +1,5 @@
-// @deno-types="../../tokenizer/pkg/chinese_tokenizer.d.ts"
-import init, { Worker } from "../../tokenizer/pkg/chinese_tokenizer.js";
+// @deno-types="../../tokenizer/pkg/zilin_worker.d.ts"
+import init, { Worker } from "../../tokenizer/pkg/zilin_worker.js";
 
 export type { Worker };
 
@@ -20,7 +20,7 @@ export type ResponseBody = { id: number } & (
     }
 );
 
-const tokenizer = init("../../tokenizer/pkg/chinese_tokenizer_bg.wasm").then(
+const tokenizer = init("../../tokenizer/pkg/zilin_worker_bg.wasm").then(
   () =>
     new Worker(
       fetch("../../../data/cedict_1_0_ts_utf-8_mdbg.txt").then((res) =>

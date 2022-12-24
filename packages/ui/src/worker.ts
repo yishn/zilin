@@ -2,7 +2,7 @@ import type {
   RequestBody,
   ResponseBody,
   Worker as WasmWorker,
-} from "../../tokenizer/src/worker.ts";
+} from "../../tokenizer/src/main.ts";
 
 type Promisified<T> = {
   [K in keyof T]: T[K] extends (...args: any) => any
@@ -10,7 +10,7 @@ type Promisified<T> = {
     : never;
 };
 
-const worker = new Worker("./packages/tokenizer/dist/worker.js", {
+const worker = new Worker("./packages/tokenizer/dist/main.js", {
   type: "module",
 });
 
