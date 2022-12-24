@@ -115,16 +115,32 @@ export const App: React.FunctionalComponent = () => {
           return {
             character,
             variants: getVariants(character, entries ?? []),
+
             meanings:
               entries?.map((entry) => ({
                 pinyin: prettifyPinyin(entry.pinyin),
                 explanation: prettifyExplanation(entry.english),
               })) ?? [],
+
             decomposition: await tokenizer.decompose(character),
+
             etymology:
               characterInfo?.etymology?.type !== "pictophonetic"
                 ? characterInfo?.etymology?.hint
-                : undefined,
+                : characterInfo.etymology.semantic == null &&
+                  characterInfo.etymology.phonetic == null
+                ? undefined
+                : [
+                    characterInfo.etymology.semantic == null
+                      ? null
+                      : `${characterInfo.etymology.semantic} provides the meaning`,
+                    characterInfo.etymology.phonetic == null
+                      ? null
+                      : `${characterInfo.etymology.phonetic} provides the pronunciation`,
+                  ]
+                    .filter((line) => line != null)
+                    .join(", while ") + ".",
+
             componentOf: (
               await tokenizer.lookupCharactersIncludingComponent(
                 character,
@@ -133,6 +149,7 @@ export const App: React.FunctionalComponent = () => {
             )
               .map((entry) => entry.character)
               .filter((word, i, arr) => i === 0 || word !== arr[i - 1]),
+
             characterOf: (
               await tokenizer.lookupWordsIncludingSubslice(
                 character,
