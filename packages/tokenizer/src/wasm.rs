@@ -3,7 +3,7 @@ use wasm_bindgen::{prelude::wasm_bindgen, UnwrapThrowExt};
 
 use crate::{
   character::{CharacterDecomposition, CharacterDictionary, CharacterEntry},
-  dictionary::{Token, WordDictionary, WordEntry},
+  word::{Token, WordDictionary, WordEntry},
 };
 
 static CEDICT_DATA: Lazy<WordDictionary> = Lazy::new(|| {
@@ -172,7 +172,7 @@ pub fn _lookup_simplified_including_subslice(
   limit: usize,
 ) -> Vec<JsWordEntry> {
   let mut result = CEDICT_DATA
-    .get_simplified_including_subslice(slice)
+    .iter_simplified_including_subslice(slice)
     .map(|entry| {
       (
         CHARACTER_DATA
@@ -194,7 +194,7 @@ pub fn _lookup_traditional_including_subslice(
   limit: usize,
 ) -> Vec<JsWordEntry> {
   let mut result = CEDICT_DATA
-    .get_traditional_including_subslice(slice)
+    .iter_traditional_including_subslice(slice)
     .map(|entry| {
       (
         CHARACTER_DATA

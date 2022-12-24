@@ -102,33 +102,33 @@ impl WordDictionary {
   pub fn iter_simplified_prefix(
     &self,
     word: &str,
-  ) -> impl Iterator<Item = &WordEntry> + '_ {
+  ) -> impl Iterator<Item = &WordEntry> {
     self.simplified.iter_prefix(word).flat_map(|vec| vec.iter())
   }
 
   pub fn iter_traditional_prefix<'a>(
     &self,
     word: &str,
-  ) -> impl Iterator<Item = &WordEntry> + '_ {
+  ) -> impl Iterator<Item = &WordEntry> {
     self
       .traditional
       .iter_prefix(word)
       .flat_map(|vec| vec.iter())
   }
 
-  pub fn iter_simplified(&self) -> impl Iterator<Item = &WordEntry> + '_ {
+  pub fn iter_simplified(&self) -> impl Iterator<Item = &WordEntry> {
     self.iter_simplified_prefix("")
   }
 
-  pub fn iter_traditional(&self) -> impl Iterator<Item = &WordEntry> + '_ {
+  pub fn iter_traditional(&self) -> impl Iterator<Item = &WordEntry> {
     self.iter_traditional_prefix("")
   }
 
-  fn get_words_including_subslice<'a>(
+  fn iter_words_including_subslice<'a>(
     &'a self,
     slice: &'a str,
     simplified: bool,
-  ) -> impl Iterator<Item = &'a WordEntry> + 'a {
+  ) -> impl Iterator<Item = &'a WordEntry> {
     simplified
       .then(|| self.iter_simplified())
       .into_iter()
@@ -150,18 +150,18 @@ impl WordDictionary {
       })
   }
 
-  pub fn get_simplified_including_subslice<'a>(
+  pub fn iter_simplified_including_subslice<'a>(
     &'a self,
     slice: &'a str,
-  ) -> impl Iterator<Item = &'a WordEntry> + 'a {
-    self.get_words_including_subslice(slice, true)
+  ) -> impl Iterator<Item = &'a WordEntry> {
+    self.iter_words_including_subslice(slice, true)
   }
 
-  pub fn get_traditional_including_subslice<'a>(
+  pub fn iter_traditional_including_subslice<'a>(
     &'a self,
     slice: &'a str,
-  ) -> impl Iterator<Item = &'a WordEntry> + 'a {
-    self.get_words_including_subslice(slice, false)
+  ) -> impl Iterator<Item = &'a WordEntry> {
+    self.iter_words_including_subslice(slice, false)
   }
 
   pub fn tokenize(&self, input: &str) -> Vec<Token> {

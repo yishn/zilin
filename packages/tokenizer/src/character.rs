@@ -60,7 +60,7 @@ impl CharacterDictionary {
       .sum::<Option<_>>()
   }
 
-  pub fn iter(&self) -> impl Iterator<Item = &CharacterEntry> + '_ {
+  pub fn iter(&self) -> impl Iterator<Item = &CharacterEntry> {
     self.data.values()
   }
 
