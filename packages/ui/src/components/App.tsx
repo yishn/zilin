@@ -62,7 +62,12 @@ export const App: React.FunctionalComponent = () => {
 
   const dictionaryEntries = useAsync(
     async () =>
-      highlight == null ? [] : (await lookup(highlight, mode)) ?? [],
+      highlight == null
+        ? { simplified: [], traditional: [] }
+        : {
+            simplified: await lookup(highlight, "simplified"),
+            traditional: await lookup(highlight, "traditional"),
+          },
     [mode, highlight]
   );
 
@@ -80,7 +85,8 @@ export const App: React.FunctionalComponent = () => {
     () =>
       getVariants(
         highlight ?? "",
-        dictionaryEntries.value ?? dictionaryEntries.previousValue ?? []
+        (dictionaryEntries.value ?? dictionaryEntries.previousValue)?.[mode] ??
+          []
       ),
     [dictionaryEntries.value ?? dictionaryEntries.previousValue]
   );
@@ -89,7 +95,8 @@ export const App: React.FunctionalComponent = () => {
     async () =>
       await Promise.all(
         [
-          ...((dictionaryEntries.value?.length ?? 0) > 0 && highlight != null
+          ...((dictionaryEntries.value?.[mode].length ?? 0) > 0 &&
+          highlight != null
             ? highlight
             : ""),
         ].map<Promise<DictionaryCharacterInfo>>(async (character) => {
@@ -142,11 +149,11 @@ export const App: React.FunctionalComponent = () => {
   useEffect(
     function switchMode() {
       (async () => {
-        if (highlight != null && dictionaryEntries.value?.length === 0) {
+        if (highlight != null && dictionaryEntries.value?.[mode].length === 0) {
           const otherMode =
             mode === "simplified" ? "traditional" : "simplified";
 
-          if ((await lookup(highlight, otherMode)!).length > 0) {
+          if (dictionaryEntries.value[otherMode].length > 0) {
             setMode(otherMode);
           }
         }
@@ -187,12 +194,13 @@ export const App: React.FunctionalComponent = () => {
         <ModeSwitcher
           mode={mode}
           onChange={(evt) => {
-            const needHighlightChange = !dictionaryEntries.value?.some(
+            const needHighlightChange = !dictionaryEntries.value?.[mode].some(
               (entry) => entry[evt.mode] === highlight
             );
 
             if (needHighlightChange) {
-              const newHighlight = dictionaryEntries.value?.[0]?.[evt.mode];
+              const newHighlight =
+                dictionaryEntries.value?.[mode][0]?.[evt.mode];
 
               if (newHighlight != null) {
                 globalThis.location.href = "#" + newHighlight;
@@ -205,15 +213,15 @@ export const App: React.FunctionalComponent = () => {
 
         <DictionaryPane
           word={
-            ((dictionaryEntries.value ?? dictionaryEntries.previousValue)
-              ?.length ?? 0) > 0
+            ((dictionaryEntries.value ?? dictionaryEntries.previousValue)?.[
+              mode
+            ].length ?? 0) > 0
               ? highlight
               : undefined
           }
           variants={wordVariants}
-          meanings={(
-            dictionaryEntries.value ?? dictionaryEntries.previousValue
-          )?.map((entry) => ({
+          meanings={(dictionaryEntries.value ??
+            dictionaryEntries.previousValue)?.[mode].map((entry) => ({
             pinyin: prettifyPinyin(entry.pinyin),
             explanation: prettifyExplanation(entry.english),
           }))}
