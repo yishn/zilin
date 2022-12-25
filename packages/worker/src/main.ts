@@ -20,14 +20,20 @@ export type ResponseBody = { id: number } & (
     }
 );
 
+const cedictData = fetch("../../../data/cedict_1_0_ts_utf-8_mdbg.txt").then(
+  (res) => res.text()
+);
+
+const characterData = fetch("../../../data/dictionary.txt").then((res) =>
+  res.text()
+);
+
+const frequencyData = Promise.allSettled([cedictData, characterData])
+  .then(() => fetch("../../../data/SUBTLEX-CH-WF.txt"))
+  .then((res) => res.text());
+
 const worker = init("../pkg/zilin_worker_bg.wasm").then(
-  () =>
-    new Worker(
-      fetch("../../../data/cedict_1_0_ts_utf-8_mdbg.txt").then((res) =>
-        res.text()
-      ),
-      fetch("../../../data/dictionary.txt").then((res) => res.text())
-    )
+  () => new Worker(cedictData, characterData)
 );
 
 globalThis.addEventListener(
