@@ -81,12 +81,6 @@ impl<T> Trie<T> {
       .and_then(|(value, _)| value.as_ref())
   }
 
-  pub fn get_mut(&mut self, key: &str) -> Option<&mut T> {
-    self
-      .entry_mut(key.chars().peekable())
-      .and_then(|(value, _)| value.as_mut())
-  }
-
   pub fn get_mut_or_insert(
     &mut self,
     key: &str,
@@ -120,18 +114,6 @@ impl<T> Trie<T> {
       Box::new(entry.0.as_ref().into_iter().chain(entry.1.iter_prefix("")))
     } else {
       Box::new(None.into_iter())
-    }
-  }
-
-  pub fn iter(&self) -> impl Iterator<Item = &T> + '_ {
-    self.iter_prefix("")
-  }
-
-  pub fn push(&mut self, key: &str, value: T) {
-    let entry = self.entry_mut(key.chars().peekable());
-
-    if let Some((value_opt, _)) = entry {
-      *value_opt = Some(value);
     }
   }
 }
