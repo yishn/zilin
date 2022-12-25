@@ -63,7 +63,7 @@ impl CharacterDictionary {
     self.data.values()
   }
 
-  pub fn lookup_characters_including_component(
+  pub fn get_characters_including_component(
     &self,
     component: char,
   ) -> impl Iterator<Item = &CharacterEntry> {

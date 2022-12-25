@@ -39,7 +39,7 @@ export const App: React.FunctionalComponent = () => {
   const [highlight, setHighlight] = useState<string>();
 
   const lookup = async (word: string, mode: ModeValue) =>
-    await tokenizer.lookupWord(word, mode === "simplified");
+    await tokenizer.getWord(word, mode === "simplified");
 
   const tokensTimeout = useRef<number | undefined>(undefined);
   const tokens = useAsync(async () => {
@@ -55,8 +55,8 @@ export const App: React.FunctionalComponent = () => {
       value: token.value,
       pronunciation: async () => {
         const entries = [
-          ...(await tokenizer.lookupWord(token.value, true)),
-          ...(await tokenizer.lookupWord(token.value, false)),
+          ...(await tokenizer.getWord(token.value, true)),
+          ...(await tokenizer.getWord(token.value, false)),
         ];
 
         return [...new Set(entries.map((entry) => entry.pinyin))]
@@ -68,7 +68,7 @@ export const App: React.FunctionalComponent = () => {
     }));
   }, [input]);
 
-  const dictionaryEntries = useAsync(
+  const dictionaryEntriesAsyncHook = useAsync(
     async () =>
       highlight == null
         ? { simplified: [], traditional: [] }
@@ -78,6 +78,10 @@ export const App: React.FunctionalComponent = () => {
           },
     [mode, highlight]
   );
+
+  const dictionaryEntries =
+    dictionaryEntriesAsyncHook.value ??
+    dictionaryEntriesAsyncHook.previousValue;
 
   function getVariants(character: string, entries: WordEntry[]): string[] {
     const set = new Set(
@@ -90,27 +94,20 @@ export const App: React.FunctionalComponent = () => {
   }
 
   const wordVariants = useMemo(
-    () =>
-      getVariants(
-        highlight ?? "",
-        (dictionaryEntries.value ?? dictionaryEntries.previousValue)?.[mode] ??
-          []
-      ),
-    [dictionaryEntries.value ?? dictionaryEntries.previousValue]
+    () => getVariants(highlight ?? "", dictionaryEntries?.[mode] ?? []),
+    [dictionaryEntries]
   );
 
   const characters = useAsync(
     async () =>
       await Promise.all(
         [
-          ...(((dictionaryEntries.value ?? dictionaryEntries.previousValue)?.[
-            mode
-          ].length ?? 0) > 0 && highlight != null
+          ...((dictionaryEntries?.[mode].length ?? 0) > 0 && highlight != null
             ? highlight
             : ""),
         ].map<Promise<DictionaryCharacterInfo>>(async (character) => {
           const entries = await lookup(character, mode);
-          const characterInfo = await tokenizer.lookupCharacter(character);
+          const characterInfo = await tokenizer.getCharacter(character);
 
           return {
             character,
@@ -142,7 +139,7 @@ export const App: React.FunctionalComponent = () => {
                     .join(", while ") + ".",
 
             componentOf: (
-              await tokenizer.lookupCharactersIncludingComponent(
+              await tokenizer.getCharactersIncludingComponent(
                 character,
                 mode === "simplified"
               )
@@ -151,7 +148,7 @@ export const App: React.FunctionalComponent = () => {
               .filter((word, i, arr) => i === 0 || word !== arr[i - 1]),
 
             characterOf: (
-              await tokenizer.lookupWordsIncludingSubslice(
+              await tokenizer.getWordsIncludingSubslice(
                 character,
                 100,
                 mode === "simplified"
@@ -162,11 +159,7 @@ export const App: React.FunctionalComponent = () => {
           };
         })
       ),
-    [
-      mode,
-      highlight,
-      dictionaryEntries.value ?? dictionaryEntries.previousValue,
-    ]
+    [mode, highlight, dictionaryEntries]
   );
 
   useEffect(
@@ -180,17 +173,20 @@ export const App: React.FunctionalComponent = () => {
   useEffect(
     function switchMode() {
       (async () => {
-        if (highlight != null && dictionaryEntries.value?.[mode].length === 0) {
+        if (
+          highlight != null &&
+          dictionaryEntriesAsyncHook.value?.[mode].length === 0
+        ) {
           const otherMode =
             mode === "simplified" ? "traditional" : "simplified";
 
-          if (dictionaryEntries.value[otherMode].length > 0) {
+          if (dictionaryEntriesAsyncHook.value[otherMode].length > 0) {
             setMode(otherMode);
           }
         }
       })();
     },
-    [dictionaryEntries.value]
+    [dictionaryEntriesAsyncHook.value]
   );
 
   useEffect(function handleHistory() {
@@ -225,13 +221,13 @@ export const App: React.FunctionalComponent = () => {
         <ModeSwitcher
           mode={mode}
           onChange={(evt) => {
-            const needHighlightChange = !dictionaryEntries.value?.[mode].some(
-              (entry) => entry[evt.mode] === highlight
-            );
+            const needHighlightChange = !dictionaryEntriesAsyncHook.value?.[
+              mode
+            ].some((entry) => entry[evt.mode] === highlight);
 
             if (needHighlightChange) {
               const newHighlight =
-                dictionaryEntries.value?.[mode][0]?.[evt.mode];
+                dictionaryEntriesAsyncHook.value?.[mode][0]?.[evt.mode];
 
               if (newHighlight != null) {
                 globalThis.location.href = "#" + newHighlight;
@@ -244,15 +240,11 @@ export const App: React.FunctionalComponent = () => {
 
         <DictionaryPane
           word={
-            ((dictionaryEntries.value ?? dictionaryEntries.previousValue)?.[
-              mode
-            ].length ?? 0) > 0
-              ? highlight
-              : undefined
+            (dictionaryEntries?.[mode].length ?? 0) > 0 ? highlight : undefined
           }
           variants={wordVariants}
-          meanings={(dictionaryEntries.value ??
-            dictionaryEntries.previousValue)?.[mode].map((entry) => ({
+          meanings={(dictionaryEntriesAsyncHook.value ??
+            dictionaryEntriesAsyncHook.previousValue)?.[mode].map((entry) => ({
             pinyin: prettifyPinyin(entry.pinyin),
             explanation: prettifyExplanation(entry.english),
           }))}

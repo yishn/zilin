@@ -154,8 +154,8 @@ impl Worker {
     JsValue::from(tokens.iter().map(JsToken::from).collect::<Array>()).into()
   }
 
-  #[wasm_bindgen(js_name = "lookupWord")]
-  pub async fn lookup_word(
+  #[wasm_bindgen(js_name = "getWord")]
+  pub async fn get_word(
     &self,
     word: &str,
     simplified: bool,
@@ -178,8 +178,8 @@ impl Worker {
     .into()
   }
 
-  #[wasm_bindgen(js_name = "lookupWordsIncludingSubslice")]
-  pub async fn lookup_words_including_subslice(
+  #[wasm_bindgen(js_name = "getWordsIncludingSubslice")]
+  pub async fn get_words_including_subslice(
     &self,
     slice: &str,
     limit: usize,
@@ -217,8 +217,8 @@ impl Worker {
     JsValue::from(result.into_iter().map(|x| x.1).collect::<Array>()).into()
   }
 
-  #[wasm_bindgen(js_name = "lookupCharacter")]
-  pub async fn lookup_character(
+  #[wasm_bindgen(js_name = "getCharacter")]
+  pub async fn get_character(
     &self,
     character: char,
   ) -> Option<JsCharacterEntry> {
@@ -229,8 +229,8 @@ impl Worker {
       .map(JsCharacterEntry::from)
   }
 
-  #[wasm_bindgen(js_name = "lookupCharactersIncludingComponent")]
-  pub async fn lookup_characters_including_component(
+  #[wasm_bindgen(js_name = "getCharactersIncludingComponent")]
+  pub async fn get_characters_including_component(
     &self,
     component: char,
     simplified: bool,
@@ -239,7 +239,7 @@ impl Worker {
     let character_dictionary = self.get_character_dictionary().await;
 
     let mut result = character_dictionary
-      .lookup_characters_including_component(component)
+      .get_characters_including_component(component)
       .filter(|entry| {
         word_dictionary
           .get(
