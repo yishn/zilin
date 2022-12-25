@@ -13,6 +13,7 @@
 html {
   --text-color: 51, 35, 49;
   --highlight-color: 155, 55, 120;
+  --unhighlight-color: 113, 76, 100;
   --highlight-color-alt: 189, 224, 114;
   --dark-scrollbar-color: 116, 180, 91;
   --dark-background-color: 22, 15, 22;

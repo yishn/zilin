@@ -36,6 +36,14 @@ impl FrequencyDictionary {
     self
       .data
       .get(word)
+      .copied()
+      .or_else(|| {
+        word
+          .chars()
+          .filter_map(|ch| self.data.get(&ch.to_string()))
+          .copied()
+          .min_by(|x, y| x.partial_cmp(y).unwrap_or(std::cmp::Ordering::Equal))
+      })
       .map(|log_frequency| log_frequency * 100.0 / self.max_log_frequency)
       .map(|x| x.clamp(0.0, 100.0) as u8)
       .unwrap_or(0)

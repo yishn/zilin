@@ -53,7 +53,10 @@
 
 .token-textarea:hover .box a,
 .token-textarea:focus-within .box a {
-  background-color: rgba(var(--highlight-color), 0.2);
+  background-color: rgba(
+    var(--unhighlight-color),
+    calc((100 - var(--frequency)) * 0.5 / 100 + 0.1)
+  );
 }
 
 .token-textarea.loading .box a {

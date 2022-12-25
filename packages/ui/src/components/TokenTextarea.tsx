@@ -6,8 +6,9 @@ import { useAsync } from "../hooks/useAsync.ts";
 
 export interface Token {
   value: string;
-  pronunciation?: () => Promise<string>;
   unselectable?: boolean;
+  frequency?: number;
+  pronunciation?: () => Promise<string>;
 }
 
 const Pronunciation: React.FunctionComponent<{
@@ -132,6 +133,7 @@ export const TokenTextarea: React.FunctionComponent<TokenTextareaProps> = (
                       top: rect.top - wordRect.top,
                       width: rect.width,
                       height: rect.height,
+                      "--frequency": token.frequency ?? 50,
                     }}
                   >
                     {!token.unselectable && <a href={"#" + token.value} />}

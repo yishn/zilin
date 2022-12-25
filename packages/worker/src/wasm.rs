@@ -315,13 +315,28 @@ impl Worker {
     &self,
     words: JsStringArray,
   ) -> JsNumberArray {
+    let word_dict = self.word_dict.get().await;
     let frequency_dict = self.frequency_dict.get().await;
 
     JsValue::from(
       Array::from(&words)
         .iter()
         .filter_map(|word| word.as_string())
-        .map(|word| frequency_dict.get(&word) as f64)
+        .map(|word| {
+          if word_dict
+            .get(&word, WordDictionaryType::Simplified)
+            .is_some()
+          {
+            frequency_dict.get(&word)
+          } else if let Some(entry) = word_dict
+            .get(&word, WordDictionaryType::Traditional)
+            .and_then(|entries| entries.first())
+          {
+            frequency_dict.get(&entry.simplified)
+          } else {
+            0
+          }
+        })
         .map(JsValue::from)
         .collect::<Array>(),
     )

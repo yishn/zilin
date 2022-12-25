@@ -53,6 +53,7 @@ export const App: React.FunctionalComponent = () => {
 
     return tokens.map<Token>((token) => ({
       value: token.value,
+      unselectable: token.value.trim() === "" || !token.hasEntries,
       pronunciation: async () => {
         const entries = [
           ...(await tokenizer.getWord(token.value, true)),
@@ -64,9 +65,14 @@ export const App: React.FunctionalComponent = () => {
           .map((pinyin) => prettifyPinyin(pinyin))
           .join("/");
       },
-      unselectable: token.value.trim() === "" || !token.hasEntries,
     }));
   }, [input]);
+
+  const frequencies = useAsync(async () => {
+    return await tokenizer.getWordFrequencies(
+      (tokens.value ?? tokens.previousValue)?.map((token) => token.value) ?? []
+    );
+  }, [tokens.value ?? tokens.previousValue]);
 
   const dictionaryEntriesAsyncHook = useAsync(
     async () =>
@@ -212,7 +218,10 @@ export const App: React.FunctionalComponent = () => {
       <TokenTextarea
         value={input}
         loading={(tokens.value ?? tokens.previousValue) == null}
-        tokens={tokens.value ?? tokens.previousValue}
+        tokens={(tokens.value ?? tokens.previousValue)?.map((token, i) => {
+          token.frequency = frequencies.value?.[i];
+          return token;
+        })}
         highlight={highlight}
         onInput={(evt) => setInput(evt.currentTarget.value)}
       />

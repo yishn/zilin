@@ -4,7 +4,7 @@
   },
   "importMap": "./import_map.json",
   "tasks": {
-    "build-wasm": "wasm-pack build --target web ./packages/worker",
+    "build-wasm": "wasm-pack build --target web ./packages/worker --profiling",
     "build-ts": "deno bundle ./packages/ui/src/main.tsx ./packages/ui/dist/main.js && deno bundle ./packages/worker/src/main.ts ./packages/worker/dist/main.js",
     "watch-ts": "deno bundle --watch ./packages/ui/src/main.tsx ./packages/ui/dist/main.js | deno bundle --watch ./packages/worker/src/main.ts ./packages/worker/dist/main.js",
     "build": "deno task build-wasm && deno task build-ts"

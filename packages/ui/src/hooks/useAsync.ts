@@ -1,6 +1,7 @@
 import { Inputs, useEffect, useRef, useState } from "preact/hooks";
 
 export type PromiseHook<T> = {
+  promise: Promise<T>;
   fulfilled: boolean;
   previousValue?: T;
   value?: T;
@@ -9,22 +10,32 @@ export type PromiseHook<T> = {
 
 export function useAsync<T>(
   fn: () => Promise<T>,
-  deps: Inputs,
+  deps: Inputs
 ): PromiseHook<T> {
-  const promRef = useRef<Promise<T> | null>(null);
-  const [state, setState] = useState<PromiseHook<T>>({
-    fulfilled: false,
+  let firstTime = false;
+
+  const promRef = useRef<Promise<T>>();
+  const [state, setState] = useState<PromiseHook<T>>(() => {
+    promRef.current = fn();
+    firstTime = true;
+
+    return {
+      promise: promRef.current,
+      fulfilled: false,
+    };
   });
 
   useEffect(() => {
-    const prom = fn();
+    const prom = firstTime ? promRef.current! : fn();
     promRef.current = prom;
 
     setState((state) => ({
+      promise: prom,
       fulfilled: false,
-      previousValue: state.fulfilled && state.err == null
-        ? state.value
-        : state.previousValue,
+      previousValue:
+        state.fulfilled && state.err == null
+          ? state.value
+          : state.previousValue,
     }));
 
     prom
