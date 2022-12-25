@@ -1,3 +1,5 @@
+use std::cell::RefCell;
+
 use js_sys::{Array, Promise};
 use once_cell::unsync::OnceCell;
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue, UnwrapThrowExt};
@@ -108,7 +110,7 @@ impl<'a> From<&'a CharacterDecomposition> for JsCharacterDecomposition {
 
 #[derive(Debug, Clone)]
 pub struct MaybeDone<T> {
-  promise: Promise,
+  promise: RefCell<Option<Promise>>,
   f: fn(Result<JsValue, JsValue>) -> T,
   data: OnceCell<T>,
 }
@@ -116,7 +118,7 @@ pub struct MaybeDone<T> {
 impl<T> MaybeDone<T> {
   pub fn new(promise: Promise, f: fn(Result<JsValue, JsValue>) -> T) -> Self {
     Self {
-      promise,
+      promise: RefCell::new(Some(promise)),
       f,
       data: OnceCell::new(),
     }
@@ -124,12 +126,17 @@ impl<T> MaybeDone<T> {
 
   pub async fn get(&self) -> &T {
     if self.data.get().is_none() {
-      let input = JsFuture::from(self.promise.clone()).await;
+      let input = {
+        let promise = self.promise.borrow().clone();
+
+        JsFuture::from(promise.unwrap_throw()).await
+      };
 
       if self.data.get().is_none() {
         let data = (self.f)(input);
 
         self.data.set(data).ok().unwrap_throw();
+        *self.promise.borrow_mut() = None;
       }
     }
 
