@@ -1,11 +1,6 @@
-use std::future::Future;
-
 use js_sys::{Array, Promise};
 use once_cell::unsync::OnceCell;
-use wasm_bindgen::{
-  prelude::{wasm_bindgen, Closure},
-  JsValue, UnwrapThrowExt,
-};
+use wasm_bindgen::{prelude::wasm_bindgen, JsValue, UnwrapThrowExt};
 use wasm_bindgen_futures::JsFuture;
 
 use crate::{
@@ -79,6 +74,12 @@ extern "C" {
 
   #[wasm_bindgen(typescript_type = "CharacterDecomposition")]
   pub type JsCharacterDecomposition;
+
+  #[wasm_bindgen(typescript_type = "string[]")]
+  pub type JsStringArray;
+
+  #[wasm_bindgen(typescript_type = "number[]")]
+  pub type JsNumberArray;
 }
 
 impl<'a> From<&'a Token> for JsToken {
@@ -307,5 +308,23 @@ impl Worker {
     JsCharacterDecomposition::from(
       &self.character_dict.get().await.decompose(character),
     )
+  }
+
+  #[wasm_bindgen(js_name = "getWordFrequencies")]
+  pub async fn get_word_frequencies(
+    &self,
+    words: JsStringArray,
+  ) -> JsNumberArray {
+    let frequency_dict = self.frequency_dict.get().await;
+
+    JsValue::from(
+      Array::from(&words)
+        .iter()
+        .filter_map(|word| word.as_string())
+        .map(|word| frequency_dict.get(&word) as f64)
+        .map(JsValue::from)
+        .collect::<Array>(),
+    )
+    .into()
   }
 }
