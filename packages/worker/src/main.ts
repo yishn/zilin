@@ -33,7 +33,7 @@ const frequencyData = Promise.allSettled([cedictData, characterData])
   .then((res) => res.text());
 
 const worker = init("../pkg/zilin_worker_bg.wasm").then(
-  () => new Worker(cedictData, characterData)
+  () => new Worker(cedictData, characterData, frequencyData)
 );
 
 globalThis.addEventListener(

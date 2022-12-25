@@ -1,12 +1,17 @@
+use std::future::Future;
+
 use js_sys::{Array, Promise};
 use once_cell::unsync::OnceCell;
-use wasm_bindgen::{prelude::wasm_bindgen, JsValue, UnwrapThrowExt};
+use wasm_bindgen::{
+  prelude::{wasm_bindgen, Closure},
+  JsValue, UnwrapThrowExt,
+};
 use wasm_bindgen_futures::JsFuture;
 
 use crate::{
   character::{CharacterDecomposition, CharacterDictionary, CharacterEntry},
   word::{Token, WordDictionary, WordEntry},
-  WordDictionaryType,
+  FrequencyDictionary, WordDictionaryType,
 };
 
 #[wasm_bindgen(typescript_custom_section)]
@@ -100,56 +105,84 @@ impl<'a> From<&'a CharacterDecomposition> for JsCharacterDecomposition {
   }
 }
 
+#[derive(Debug, Clone)]
+pub struct MaybeDone<T> {
+  promise: Promise,
+  f: fn(Result<JsValue, JsValue>) -> T,
+  data: OnceCell<T>,
+}
+
+impl<T> MaybeDone<T> {
+  pub fn new(promise: Promise, f: fn(Result<JsValue, JsValue>) -> T) -> Self {
+    Self {
+      promise,
+      f,
+      data: OnceCell::new(),
+    }
+  }
+
+  pub async fn get(&self) -> &T {
+    if self.data.get().is_none() {
+      let input = JsFuture::from(self.promise.clone()).await;
+
+      if self.data.get().is_none() {
+        let data = (self.f)(input);
+
+        self.data.set(data).ok().unwrap_throw();
+      }
+    }
+
+    self.data.get().unwrap_throw()
+  }
+}
+
 #[wasm_bindgen]
 pub struct Worker {
-  word_dict: (Promise, OnceCell<WordDictionary>),
-  character_dict: (Promise, OnceCell<CharacterDictionary>),
+  word_dict: MaybeDone<WordDictionary>,
+  character_dict: MaybeDone<CharacterDictionary>,
+  frequency_dict: MaybeDone<FrequencyDictionary>,
 }
 
 #[wasm_bindgen]
 impl Worker {
   #[wasm_bindgen(constructor)]
-  pub fn new(word_dict_data: Promise, character_dict_data: Promise) -> Worker {
+  pub fn new(
+    word_dict_data: Promise,
+    character_dict_data: Promise,
+    frequency_dict_data: Promise,
+  ) -> Worker {
     Worker {
-      word_dict: (word_dict_data, OnceCell::new()),
-      character_dict: (character_dict_data, OnceCell::new()),
+      word_dict: MaybeDone::new(word_dict_data, |data| {
+        let data = data
+          .ok()
+          .and_then(|data| data.as_string())
+          .unwrap_or_default();
+
+        WordDictionary::new(&data)
+      }),
+
+      character_dict: MaybeDone::new(character_dict_data, |data| {
+        let data = data
+          .ok()
+          .and_then(|data| data.as_string())
+          .unwrap_or_default();
+
+        CharacterDictionary::new(&data)
+      }),
+
+      frequency_dict: MaybeDone::new(frequency_dict_data, |data| {
+        let data = data
+          .ok()
+          .and_then(|data| data.as_string())
+          .unwrap_or_default();
+
+        FrequencyDictionary::new(&data)
+      }),
     }
-  }
-
-  async fn get_word_dictionary(&self) -> &WordDictionary {
-    if self.word_dict.1.get().is_none() {
-      let data = JsFuture::from(self.word_dict.0.clone())
-        .await
-        .ok()
-        .and_then(|result| result.as_string())
-        .unwrap_or_default();
-
-      self.word_dict.1.set(WordDictionary::new(&data)).ok();
-    }
-
-    self.word_dict.1.get().unwrap_throw()
-  }
-
-  async fn get_character_dictionary(&self) -> &CharacterDictionary {
-    if self.character_dict.1.get().is_none() {
-      let data = JsFuture::from(self.character_dict.0.clone())
-        .await
-        .ok()
-        .and_then(|result| result.as_string())
-        .unwrap_or_default();
-
-      self
-        .character_dict
-        .1
-        .set(CharacterDictionary::new(&data))
-        .ok();
-    }
-
-    self.character_dict.1.get().unwrap_throw()
   }
 
   pub async fn tokenize(&self, input: &str) -> JsTokenArray {
-    let tokens = self.get_word_dictionary().await.tokenize(input);
+    let tokens = self.word_dict.get().await.tokenize(input);
 
     JsValue::from(tokens.iter().map(JsToken::from).collect::<Array>()).into()
   }
@@ -162,7 +195,8 @@ impl Worker {
   ) -> JsWordEntryArray {
     JsValue::from(
       self
-        .get_word_dictionary()
+        .word_dict
+        .get()
         .await
         .get(
           word,
@@ -185,10 +219,11 @@ impl Worker {
     limit: usize,
     simplified: bool,
   ) -> JsWordEntryArray {
-    let character_dictionary = self.get_character_dictionary().await;
+    let character_dictionary = self.character_dict.get().await;
 
     let mut result = self
-      .get_word_dictionary()
+      .word_dict
+      .get()
       .await
       .iter_including_subslice(
         slice,
@@ -223,7 +258,8 @@ impl Worker {
     character: char,
   ) -> Option<JsCharacterEntry> {
     self
-      .get_character_dictionary()
+      .character_dict
+      .get()
       .await
       .get(character)
       .map(JsCharacterEntry::from)
@@ -235,8 +271,8 @@ impl Worker {
     component: char,
     simplified: bool,
   ) -> JsCharacterEntryArray {
-    let word_dictionary = self.get_word_dictionary().await;
-    let character_dictionary = self.get_character_dictionary().await;
+    let word_dictionary = self.word_dict.get().await;
+    let character_dictionary = self.character_dict.get().await;
 
     let mut result = character_dictionary
       .get_characters_including_component(component)
@@ -269,7 +305,7 @@ impl Worker {
   #[wasm_bindgen(js_name = "decompose")]
   pub async fn decompose(&self, character: char) -> JsCharacterDecomposition {
     JsCharacterDecomposition::from(
-      &self.get_character_dictionary().await.decompose(character),
+      &self.character_dict.get().await.decompose(character),
     )
   }
 }
