@@ -28,3 +28,10 @@ reproduction in any medium, provided the original author and source are properly
 credited.
 
 [Download here.](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2880003/)
+
+--
+
+sentences.txt is from Tatoeba and is licensed under a
+[Creative Commons Attribution 2.0 FR License](https://creativecommons.org/licenses/by/2.0/fr/).
+
+[Download here.](https://tatoeba.org/en/downloads)
