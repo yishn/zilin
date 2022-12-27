@@ -89,6 +89,16 @@ export const App: React.FunctionalComponent = () => {
     dictionaryEntriesAsyncHook.value ??
     dictionaryEntriesAsyncHook.previousValue;
 
+  const sentences = useAsync(async () => {
+    return highlight == null
+      ? []
+      : await tokenizer.getSentencesIncludingWord(
+          highlight,
+          10,
+          mode === "simplified"
+        );
+  }, [mode, highlight]);
+
   function getVariants(character: string, entries: WordEntry[]): string[] {
     const set = new Set(
       entries.flatMap((entry) => [entry.simplified, entry.traditional])
@@ -257,7 +267,7 @@ export const App: React.FunctionalComponent = () => {
             pinyin: prettifyPinyin(entry.pinyin),
             explanation: prettifyExplanation(entry.english),
           }))}
-          characters={characters.value ?? characters.previousValue}
+          characters={characters.value}
         />
       </aside>
     </div>

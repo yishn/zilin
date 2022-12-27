@@ -8,7 +8,7 @@ use wasm_bindgen_futures::JsFuture;
 use crate::{
   character::{CharacterDecomposition, CharacterDictionary, CharacterEntry},
   word::{Token, WordDictionary, WordEntry},
-  FrequencyDictionary, WordDictionaryType,
+  FrequencyDictionary, SentenceDictionary, WordDictionaryType,
 };
 
 #[wasm_bindgen(typescript_custom_section)]
@@ -82,6 +82,9 @@ extern "C" {
 
   #[wasm_bindgen(typescript_type = "number[]")]
   pub type JsNumberArray;
+
+  #[wasm_bindgen(typescript_type = "[chinese: string, english: string][]")]
+  pub type JsSentenceArray;
 }
 
 impl<'a> From<&'a Token> for JsToken {
@@ -162,6 +165,7 @@ pub struct Worker {
   word_dict: MaybeDone<WordDictionary>,
   character_dict: MaybeDone<CharacterDictionary>,
   frequency_dict: MaybeDone<FrequencyDictionary>,
+  sentences_dict: MaybeDone<SentenceDictionary>,
 }
 
 #[wasm_bindgen]
@@ -171,6 +175,7 @@ impl Worker {
     word_dict_data: Promise,
     character_dict_data: Promise,
     frequency_dict_data: Promise,
+    sentences_dict_data: Promise,
   ) -> Self {
     let word_dict = MaybeDone::new(word_dict_data, |data| {
       Box::pin(async {
@@ -205,10 +210,28 @@ impl Worker {
       })
     });
 
+    let sentences_dict = MaybeDone::new(sentences_dict_data, {
+      let word_dict = word_dict.clone();
+
+      move |data| {
+        let word_dict = word_dict.clone();
+
+        Box::pin(async move {
+          let data = data
+            .ok()
+            .and_then(|data| data.as_string())
+            .unwrap_or_default();
+
+          SentenceDictionary::new(&data, word_dict.get().await)
+        })
+      }
+    });
+
     Self {
       word_dict,
       character_dict,
       frequency_dict,
+      sentences_dict,
     }
   }
 
@@ -368,6 +391,39 @@ impl Worker {
           }
         })
         .map(JsValue::from)
+        .collect::<Array>(),
+    )
+    .into()
+  }
+
+  #[wasm_bindgen(js_name = "getSentencesIncludingWord")]
+  pub async fn get_sentences_including_word(
+    &self,
+    word: &str,
+    limit: usize,
+    simplified: bool,
+  ) -> JsSentenceArray {
+    let mut sentences = self
+      .sentences_dict
+      .get()
+      .await
+      .iter_sentences_including_word(
+        word,
+        if simplified {
+          WordDictionaryType::Simplified
+        } else {
+          WordDictionaryType::Traditional
+        },
+      )
+      .collect::<Vec<_>>();
+
+    sentences.sort_by_key(|(sentence, _)| sentence.len());
+
+    JsValue::from(
+      sentences
+        .into_iter()
+        .take(limit)
+        .map(|entry| serde_wasm_bindgen::to_value(&entry).unwrap_throw())
         .collect::<Array>(),
     )
     .into()
