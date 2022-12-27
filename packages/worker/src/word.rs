@@ -103,9 +103,9 @@ impl WordDictionary {
   pub fn get(
     &self,
     word: &str,
-    simplified: WordDictionaryType,
+    ty: WordDictionaryType,
   ) -> Option<&Vec<WordEntry>> {
-    match simplified {
+    match ty {
       WordDictionaryType::Simplified => &self.simplified,
       WordDictionaryType::Traditional => &self.traditional,
     }
@@ -115,9 +115,9 @@ impl WordDictionary {
   pub fn iter_prefix(
     &self,
     word: &str,
-    simplified: WordDictionaryType,
+    ty: WordDictionaryType,
   ) -> impl Iterator<Item = &WordEntry> {
-    match simplified {
+    match ty {
       WordDictionaryType::Simplified => &self.simplified,
       WordDictionaryType::Traditional => &self.traditional,
     }
@@ -127,18 +127,18 @@ impl WordDictionary {
 
   pub fn iter(
     &self,
-    simplified: WordDictionaryType,
+    ty: WordDictionaryType,
   ) -> impl Iterator<Item = &WordEntry> {
-    self.iter_prefix("", simplified)
+    self.iter_prefix("", ty)
   }
 
   pub fn iter_including_subslice<'a>(
     &'a self,
     slice: &'a str,
-    simplified: WordDictionaryType,
+    ty: WordDictionaryType,
   ) -> impl Iterator<Item = &'a WordEntry> {
-    self.iter(simplified).filter(move |entry| {
-      let word = match simplified {
+    self.iter(ty).filter(move |entry| {
+      let word = match ty {
         WordDictionaryType::Simplified => &entry.simplified,
         WordDictionaryType::Traditional => &entry.traditional,
       };
