@@ -1,8 +1,10 @@
+use std::sync::Arc;
+
 use rustc_hash::FxHashMap as HashMap;
 
 #[derive(Debug, Clone)]
 pub struct FrequencyDictionary {
-  data: HashMap<String, f32>,
+  data: HashMap<Arc<str>, f32>,
   max_log_frequency: f32,
 }
 
@@ -21,7 +23,7 @@ impl FrequencyDictionary {
         tokens.next(),
         tokens.next().and_then(|token| token.parse().ok()),
       ) {
-        map.insert(word.to_string(), log_frequency);
+        map.insert(Arc::from(word), log_frequency);
         max = max.max(log_frequency);
       }
     }
@@ -40,7 +42,7 @@ impl FrequencyDictionary {
       .or_else(|| {
         word
           .chars()
-          .filter_map(|ch| self.data.get(&ch.to_string()))
+          .filter_map(|ch| self.data.get(&*ch.to_string()))
           .copied()
           .min_by(|x, y| x.partial_cmp(y).unwrap_or(std::cmp::Ordering::Equal))
       })

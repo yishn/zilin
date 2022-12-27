@@ -1,4 +1,4 @@
-use std::cell::RefCell;
+use std::{cell::RefCell, future::Future, pin::Pin, rc::Rc};
 
 use js_sys::{Array, Promise};
 use once_cell::unsync::OnceCell;
@@ -108,19 +108,32 @@ impl<'a> From<&'a CharacterDecomposition> for JsCharacterDecomposition {
   }
 }
 
-#[derive(Debug, Clone)]
 pub struct MaybeDone<T> {
   promise: RefCell<Option<Promise>>,
-  f: fn(Result<JsValue, JsValue>) -> T,
-  data: OnceCell<T>,
+  f: Rc<dyn Fn(Result<JsValue, JsValue>) -> Pin<Box<dyn Future<Output = T>>>>,
+  data: Rc<OnceCell<T>>,
+}
+
+impl<T> Clone for MaybeDone<T> {
+  fn clone(&self) -> Self {
+    Self {
+      promise: self.promise.clone(),
+      f: self.f.clone(),
+      data: self.data.clone(),
+    }
+  }
 }
 
 impl<T> MaybeDone<T> {
-  pub fn new(promise: Promise, f: fn(Result<JsValue, JsValue>) -> T) -> Self {
+  pub fn new(
+    promise: Promise,
+    f: impl Fn(Result<JsValue, JsValue>) -> Pin<Box<dyn Future<Output = T>>>
+      + 'static,
+  ) -> Self {
     Self {
       promise: RefCell::new(Some(promise)),
-      f,
-      data: OnceCell::new(),
+      f: Rc::new(f),
+      data: Rc::new(OnceCell::new()),
     }
   }
 
@@ -133,9 +146,9 @@ impl<T> MaybeDone<T> {
       };
 
       if self.data.get().is_none() {
-        let data = (self.f)(input);
+        let data = (self.f)(input).await;
 
-        self.data.set(data).ok().unwrap_throw();
+        self.data.set(data).ok();
         *self.promise.borrow_mut() = None;
       }
     }
@@ -158,34 +171,44 @@ impl Worker {
     word_dict_data: Promise,
     character_dict_data: Promise,
     frequency_dict_data: Promise,
-  ) -> Worker {
-    Worker {
-      word_dict: MaybeDone::new(word_dict_data, |data| {
+  ) -> Self {
+    let word_dict = MaybeDone::new(word_dict_data, |data| {
+      Box::pin(async {
         let data = data
           .ok()
           .and_then(|data| data.as_string())
           .unwrap_or_default();
 
         WordDictionary::new(&data)
-      }),
+      })
+    });
 
-      character_dict: MaybeDone::new(character_dict_data, |data| {
+    let character_dict = MaybeDone::new(character_dict_data, |data| {
+      Box::pin(async {
         let data = data
           .ok()
           .and_then(|data| data.as_string())
           .unwrap_or_default();
 
         CharacterDictionary::new(&data)
-      }),
+      })
+    });
 
-      frequency_dict: MaybeDone::new(frequency_dict_data, |data| {
+    let frequency_dict = MaybeDone::new(frequency_dict_data, |data| {
+      Box::pin(async {
         let data = data
           .ok()
           .and_then(|data| data.as_string())
           .unwrap_or_default();
 
         FrequencyDictionary::new(&data)
-      }),
+      })
+    });
+
+    Self {
+      word_dict,
+      character_dict,
+      frequency_dict,
     }
   }
 

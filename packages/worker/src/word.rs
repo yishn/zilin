@@ -1,4 +1,5 @@
 use serde::Serialize;
+use std::sync::Arc;
 
 use crate::trie::Trie;
 
@@ -7,17 +8,17 @@ pub const CHINESE_PUNCTUATION: &'static [char] = &[
   '【', '】', '！', '（', '）', '，', '：', '；', '？',
 ];
 
-#[derive(Debug, Default, PartialEq, Eq, Clone, Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 pub struct WordEntry {
-  pub traditional: String,
-  pub simplified: String,
-  pub pinyin: String,
-  pub english: String,
+  pub traditional: Arc<str>,
+  pub simplified: Arc<str>,
+  pub pinyin: Arc<str>,
+  pub english: Arc<str>,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Serialize)]
 pub struct Token {
-  pub value: String,
+  pub value: Arc<str>,
   pub offset: usize,
   #[serde(rename = "hasEntries")]
   pub has_entries: bool,
@@ -80,10 +81,10 @@ impl WordDictionary {
         }
 
         let entry = WordEntry {
-          traditional: traditional.to_string(),
-          simplified: simplified.to_string(),
-          pinyin: pinyin.to_string(),
-          english: (english).to_string(),
+          traditional: traditional.into(),
+          simplified: simplified.into(),
+          pinyin: pinyin.into(),
+          english: english.into(),
         };
 
         result
@@ -143,7 +144,7 @@ impl WordDictionary {
         WordDictionaryType::Traditional => &entry.traditional,
       };
 
-      word != slice && word.contains(slice)
+      &**word != slice && word.contains(slice)
     })
   }
 
@@ -154,7 +155,7 @@ impl WordDictionary {
 
     let mut push_token = |word: &str| {
       tokens.push(Token {
-        value: word.to_string(),
+        value: word.into(),
         offset,
         has_entries: self.get(word, WordDictionaryType::Simplified).is_some()
           || self.get(word, WordDictionaryType::Traditional).is_some(),
@@ -176,9 +177,9 @@ impl WordDictionary {
           .chain(self.iter_prefix(&prefix, WordDictionaryType::Traditional));
 
         for entry in entries {
-          let new_found_word = if sliced_input.starts_with(&entry.simplified) {
+          let new_found_word = if sliced_input.starts_with(&*entry.simplified) {
             Some(&*entry.simplified)
-          } else if sliced_input.starts_with(&entry.traditional) {
+          } else if sliced_input.starts_with(&*entry.traditional) {
             Some(&*entry.traditional)
           } else {
             None
@@ -267,8 +268,8 @@ mod tests {
       .unwrap();
 
     assert_eq!(data.len(), 1);
-    assert_eq!(data[0].simplified, "识字");
-    assert_eq!(data[0].traditional, "識字");
+    assert_eq!(&*data[0].simplified, "识字");
+    assert_eq!(&*data[0].traditional, "識字");
   }
 
   #[test]
@@ -294,7 +295,7 @@ mod tests {
     let tokens = CEDICT_DATA.tokenize("我是中国人。");
 
     assert_eq!(
-      tokens.iter().map(|token| &token.value).collect::<Vec<_>>(),
+      tokens.iter().map(|token| &*token.value).collect::<Vec<_>>(),
       vec!["我", "是", "中国人", "。"]
     );
   }
@@ -304,7 +305,7 @@ mod tests {
     let tokens = CEDICT_DATA.tokenize("我的名字叫David。");
 
     assert_eq!(
-      tokens.iter().map(|token| &token.value).collect::<Vec<_>>(),
+      tokens.iter().map(|token| &*token.value).collect::<Vec<_>>(),
       vec!["我", "的", "名字", "叫", "David", "。"]
     );
   }
