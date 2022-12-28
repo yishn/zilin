@@ -4,6 +4,7 @@ export type PromiseHook<T> = {
   promise: Promise<T>;
   fulfilled: boolean;
   previousValue?: T;
+  continuousValue?: T;
   value?: T;
   err?: Error;
 };
@@ -36,6 +37,7 @@ export function useAsync<T>(
         state.fulfilled && state.err == null
           ? state.value
           : state.previousValue,
+      continuousValue: state.continuousValue,
     }));
 
     prom
@@ -47,6 +49,7 @@ export function useAsync<T>(
         setState((state) => ({
           ...state,
           previousValue: state.value,
+          continuousValue: update.err == null ? update.value : state.value,
           fulfilled: true,
           ...update,
         }));

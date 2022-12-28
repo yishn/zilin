@@ -5,7 +5,6 @@ import { getWasmWorker } from "../worker.ts";
 export interface LinkifiedTextProps {
   value: string;
   handleSeparators?: boolean;
-  preventFallback?: boolean;
 }
 
 export const LinkifiedText: React.FunctionComponent<LinkifiedTextProps> = (
@@ -17,22 +16,22 @@ export const LinkifiedText: React.FunctionComponent<LinkifiedTextProps> = (
 
   return (
     <>
-      {tokens.value == null
-        ? props.preventFallback
-          ? null
-          : props.value
-        : tokens.value.map((token) => {
-            if (token.hasEntries) {
-              return <a href={"#" + token.value}>{token.value}</a>;
-            } else if (
-              props.handleSeparators &&
-              (token.value === "/" || token.value === "|")
-            ) {
-              return <span class="separator">{token.value}</span>;
-            } else {
-              return token.value;
-            }
-          })}
+      {tokens.value == null ? (
+        <span style={{ visibility: "hidden" }}>_</span>
+      ) : (
+        tokens.value.map((token) => {
+          if (token.hasEntries) {
+            return <a href={"#" + token.value}>{token.value}</a>;
+          } else if (
+            props.handleSeparators &&
+            (token.value === "/" || token.value === "|")
+          ) {
+            return <span class="separator">{token.value}</span>;
+          } else {
+            return token.value;
+          }
+        })
+      )}
     </>
   );
 };
