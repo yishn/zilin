@@ -63,7 +63,7 @@ interface MeaningsListProps {
 const MeaningsList: React.FunctionComponent<MeaningsListProps> = (props) => {
   return (
     <ul class="meanings-list">
-      {props.meanings?.map((entry, i) => (
+      {props.meanings?.map((entry) => (
         <li>
           <span class="pinyin">{entry.pinyin}</span>{" "}
           <span class="explanation">
@@ -79,15 +79,25 @@ export type SentenceEntry = [sentence: string, english: string];
 
 interface SentencesListProps {
   sentences?: SentenceEntry[];
+  length?: number;
 }
 
 const SentencesList: React.FunctionComponent<SentencesListProps> = (props) => {
+  const [length, setLength] = useState(props.length ?? Infinity);
+
+  useEffect(
+    function updateLength() {
+      setLength(props.length ?? Infinity);
+    },
+    [props.length, props.sentences]
+  );
+
   return (props.sentences?.length ?? 0) === 0 ? null : (
     <div class="sentences-list">
       <h3>Example Sentences</h3>
 
       <ul>
-        {props.sentences?.map(([sentence, english]) => (
+        {props.sentences?.slice(0, length).map(([sentence, english]) => (
           <li>
             <p class="sentence">
               <LinkifiedText value={sentence} />
@@ -95,6 +105,23 @@ const SentencesList: React.FunctionComponent<SentencesListProps> = (props) => {
             <p class="english">{english}</p>
           </li>
         ))}
+
+        {length < (props.sentences?.length ?? 0) && (
+          <li class="more">
+            <a
+              href="#"
+              onClick={(evt) => {
+                evt.preventDefault();
+
+                if (props.length != null) {
+                  setLength((length) => length + props.length!);
+                }
+              }}
+            >
+              more
+            </a>
+          </li>
+        )}
       </ul>
     </div>
   );
@@ -159,7 +186,7 @@ export const DictionaryPane: React.FunctionComponent<DictionaryPaneProps> = (
 
           <MeaningsList meanings={props.meanings} />
 
-          <SentencesList sentences={props.sentences} />
+          <SentencesList sentences={props.sentences} length={3} />
         </div>
       )}
 
@@ -242,7 +269,7 @@ export const DictionaryPane: React.FunctionComponent<DictionaryPaneProps> = (
               )}
 
               {!oneCharacter ? null : (
-                <SentencesList sentences={props.sentences} />
+                <SentencesList sentences={props.sentences} length={3} />
               )}
 
               <WordList

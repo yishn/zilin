@@ -90,7 +90,7 @@ export const App: React.FunctionalComponent = () => {
       ? []
       : await tokenizer.getSentencesIncludingWord(
           highlight,
-          10,
+          100,
           mode === "simplified"
         );
   }, [mode, highlight]);

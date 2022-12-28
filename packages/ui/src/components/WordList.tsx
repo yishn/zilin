@@ -15,7 +15,7 @@ export const WordList: React.FunctionComponent<WordListProps> = (props) => {
     function updateLength() {
       setLength(props.length ?? Infinity);
     },
-    [props.length]
+    [props.length, props.words]
   );
 
   return (props.words?.length ?? 0) <= 0 ? null : (

@@ -114,6 +114,10 @@
   font-size: 0.8em;
 }
 
+.dictionary-pane .sentences-list .more {
+  list-style: none;
+}
+
 .dictionary-pane .character-info {
   position: relative;
   display: flex;
