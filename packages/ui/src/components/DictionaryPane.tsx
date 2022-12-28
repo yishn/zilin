@@ -75,6 +75,31 @@ const MeaningsList: React.FunctionComponent<MeaningsListProps> = (props) => {
   );
 };
 
+export type SentenceEntry = [sentence: string, english: string];
+
+interface SentencesListProps {
+  sentences?: SentenceEntry[];
+}
+
+const SentencesList: React.FunctionComponent<SentencesListProps> = (props) => {
+  return (props.sentences?.length ?? 0) === 0 ? null : (
+    <div class="sentences-list">
+      <h3>Example Sentences</h3>
+
+      <ul>
+        {props.sentences?.map(([sentence, english]) => (
+          <li>
+            <p class="sentence">
+              <LinkifiedText value={sentence} />
+            </p>
+            <p class="english">{english}</p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+
 export interface DictionaryCharacterInfo {
   character: string;
   variants: string[];
@@ -89,6 +114,7 @@ export interface DictionaryPaneProps {
   word?: string;
   variants?: string[];
   meanings?: DictionaryMeaning[];
+  sentences?: SentenceEntry[];
   characters?: DictionaryCharacterInfo[];
 }
 
@@ -132,6 +158,8 @@ export const DictionaryPane: React.FunctionComponent<DictionaryPaneProps> = (
           </ul>
 
           <MeaningsList meanings={props.meanings} />
+
+          <SentencesList sentences={props.sentences} />
         </div>
       )}
 
@@ -188,7 +216,7 @@ export const DictionaryPane: React.FunctionComponent<DictionaryPaneProps> = (
             <li>
               <header>
                 <h1 class={"word " + (!oneCharacter ? "small " : "")}>
-                  {info.character}
+                  <a href={"#" + info.character}>{info.character}</a>
                 </h1>
 
                 <ul class="variants">
@@ -211,6 +239,10 @@ export const DictionaryPane: React.FunctionComponent<DictionaryPaneProps> = (
                 <p class="etymology">
                   <h3>Etymology:</h3> <LinkifiedText value={info.etymology} />
                 </p>
+              )}
+
+              {!oneCharacter ? null : (
+                <SentencesList sentences={props.sentences} />
               )}
 
               <WordList

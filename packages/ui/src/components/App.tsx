@@ -263,6 +263,7 @@ export const App: React.FunctionalComponent = () => {
             pinyin: prettifyPinyin(entry.pinyin),
             explanation: prettifyExplanation(entry.english),
           }))}
+          sentences={sentences.value}
           characters={characters.value}
         />
       </aside>

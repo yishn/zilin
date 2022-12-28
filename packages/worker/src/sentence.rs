@@ -68,11 +68,10 @@ impl SentenceDictionary {
       .values()
       .filter(move |entry| {
         entry.tokens.iter().any(|(simplified, traditional)| {
-          word
-            == &**match ty {
-              WordDictionaryType::Simplified => simplified,
-              WordDictionaryType::Traditional => traditional,
-            }
+          &**match ty {
+            WordDictionaryType::Simplified => simplified,
+            WordDictionaryType::Traditional => traditional,
+          } == word
         })
       })
       .map(move |entry| {

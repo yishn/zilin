@@ -83,7 +83,7 @@ extern "C" {
   #[wasm_bindgen(typescript_type = "number[]")]
   pub type JsNumberArray;
 
-  #[wasm_bindgen(typescript_type = "[chinese: string, english: string][]")]
+  #[wasm_bindgen(typescript_type = "[sentence: string, english: string][]")]
   pub type JsSentenceArray;
 }
 
