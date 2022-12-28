@@ -1,6 +1,5 @@
 import * as React from "preact";
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
-import { prettify as pp } from "prettify-pinyin";
 import { getWasmWorker } from "../worker.ts";
 import { useAsync } from "../hooks/useAsync.ts";
 import { TokenTextarea, Token } from "./TokenTextarea.tsx";
@@ -9,7 +8,52 @@ import { ModeSwitcher, ModeValue } from "./ModeSwitcher.tsx";
 import type { WordEntry } from "../worker.ts";
 
 function prettifyPinyin(pinyin: string): string {
-  return pp(pinyin.replaceAll("u:", "ü")).replace(/\s+/g, "");
+  const replacements = {
+    a: ["ā", "á", "ǎ", "à"],
+    A: ["Ā", "Á", "Ǎ", "À"],
+    e: ["ē", "é", "ě", "è"],
+    E: ["Ē", "É", "Ě", "È"],
+    u: ["ū", "ú", "ǔ", "ù"],
+    U: ["Ū", "Ú", "Ǔ", "Ù"],
+    i: ["ī", "í", "ǐ", "ì"],
+    I: ["Ī", "Í", "Ǐ", "Ì"],
+    o: ["ō", "ó", "ǒ", "ò"],
+    O: ["Ō", "Ó", "Ǒ", "Ò"],
+    ü: ["ǖ", "ǘ", "ǚ", "ǜ"],
+    Ü: ["Ǖ", "Ǘ", "Ǚ", "Ǜ"],
+  } as const;
+
+  const medials = ["i", "u", "ü"];
+
+  return pinyin
+    .replace(/(u:|v)/g, "ü")
+    .split(/\s+/)
+    .map((syllable) => {
+      const tone = parseInt(syllable.slice(-1), 10);
+      if (isNaN(tone)) return syllable;
+
+      const letters = [...syllable.slice(0, -1)];
+
+      for (let i = 0; i < letters.length; i++) {
+        if (letters[i] in replacements) {
+          if (
+            medials.includes(letters[i].toLowerCase()) &&
+            letters[i + 1] in replacements
+          ) {
+            continue;
+          }
+
+          letters[i] =
+            replacements[letters[i] as keyof typeof replacements][tone - 1] ??
+            letters[i];
+
+          break;
+        }
+      }
+
+      return letters.join("");
+    })
+    .join("");
 }
 
 function prettifyExplanation(input: string): string {

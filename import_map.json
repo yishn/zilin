@@ -1,7 +1,6 @@
 {
   "imports": {
     "preact": "https://esm.sh/preact@10.11.3",
-    "preact/hooks": "https://esm.sh/preact@10.11.3/hooks",
-    "prettify-pinyin": "https://esm.sh/prettify-pinyin@0.1.5"
+    "preact/hooks": "https://esm.sh/preact@10.11.3/hooks"
   }
 }
