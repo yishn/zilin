@@ -55,7 +55,7 @@
 .token-textarea:focus-within .box a {
   background-color: rgba(
     var(--unhighlight-color),
-    calc((100 - var(--frequency)) * 0.5 / 100 + 0.1)
+    calc((100 - var(--frequency)) * 0.7 / 100 + 0.1)
   );
 }
 

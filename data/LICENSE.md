@@ -20,7 +20,7 @@ dictionary.txt; if not, see see <http://www.gnu.org/licenses/>.
 
 --
 
-SUBTLEX-CH-WF is licensed under a Creative Commons Attribution License.
+SUBTLEX-CH-CHR.txt is licensed under a Creative Commons Attribution License.
 
 This is an open-access article distributed under the terms of the Creative
 Commons Attribution License, which permits unrestricted use, distribution, and

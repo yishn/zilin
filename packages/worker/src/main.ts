@@ -29,7 +29,7 @@ const characterData = fetch("../../../data/dictionary.txt").then((res) =>
 );
 
 const frequencyData = Promise.allSettled([cedictData, characterData])
-  .then(() => fetch("../../../data/SUBTLEX-CH-WF.txt"))
+  .then(() => fetch("../../../data/SUBTLEX-CH-CHR.txt"))
   .then((res) => res.text());
 
 const sentencesData = frequencyData

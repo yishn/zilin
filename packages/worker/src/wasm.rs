@@ -299,11 +299,18 @@ impl Worker {
           JsWordEntry::from(entry),
         )
       })
-      .take(limit)
       .collect::<Vec<_>>();
 
     result.sort_by_key(|x| x.0);
-    JsValue::from(result.into_iter().map(|x| x.1).collect::<Array>()).into()
+
+    JsValue::from(
+      result
+        .into_iter()
+        .take(limit)
+        .map(|x| x.1)
+        .collect::<Array>(),
+    )
+    .into()
   }
 
   #[wasm_bindgen(js_name = "getCharacter")]
@@ -376,19 +383,18 @@ impl Worker {
         .iter()
         .filter_map(|word| word.as_string())
         .map(|word| {
-          if word_dict
-            .get(&word, WordDictionaryType::Simplified)
-            .is_some()
-          {
-            frequency_dict.get(&word)
-          } else if let Some(entry) = word_dict
+          word_dict
             .get(&word, WordDictionaryType::Traditional)
-            .and_then(|entries| entries.first())
-          {
-            frequency_dict.get(&entry.simplified)
-          } else {
-            0
-          }
+            .or(word_dict.get(&word, WordDictionaryType::Simplified))
+            .map(|entries| {
+              entries
+                .iter()
+                .flat_map(|entry| [&*entry.simplified, &*entry.traditional])
+            })
+            .into_iter()
+            .flatten()
+            .find_map(|word| frequency_dict.get(word))
+            .unwrap_or(0)
         })
         .map(JsValue::from)
         .collect::<Array>(),

@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{cmp::Ordering, sync::Arc};
 
 use rustc_hash::FxHashMap as HashMap;
 
@@ -34,7 +34,7 @@ impl FrequencyDictionary {
     }
   }
 
-  pub fn get(&self, word: &str) -> u8 {
+  pub fn get(&self, word: &str) -> Option<u8> {
     self
       .data
       .get(word)
@@ -44,11 +44,10 @@ impl FrequencyDictionary {
           .chars()
           .filter_map(|ch| self.data.get(&*ch.to_string()))
           .copied()
-          .min_by(|x, y| x.partial_cmp(y).unwrap_or(std::cmp::Ordering::Equal))
+          .min_by(|x, y| x.partial_cmp(y).unwrap_or(Ordering::Equal))
       })
       .map(|log_frequency| log_frequency * 100.0 / self.max_log_frequency)
       .map(|x| x.clamp(0.0, 100.0) as u8)
-      .unwrap_or(0)
   }
 }
 
@@ -59,7 +58,7 @@ mod tests {
   use super::FrequencyDictionary;
 
   static FREQUENCY_DATA: Lazy<FrequencyDictionary> = Lazy::new(|| {
-    FrequencyDictionary::new(include_str!("../../../data/SUBTLEX-CH-WF.txt"))
+    FrequencyDictionary::new(include_str!("../../../data/SUBTLEX-CH-CHR.txt"))
   });
 
   #[test]
