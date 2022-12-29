@@ -287,27 +287,67 @@ impl Worker {
           WordDictionaryType::Traditional
         },
       )
-      .map(|entry| {
-        (
-          character_dictionary
-            .stroke_count(if simplified {
-              &entry.simplified
-            } else {
-              &entry.traditional
-            })
-            .unwrap_or(usize::MAX),
-          JsWordEntry::from(entry),
-        )
-      })
       .collect::<Vec<_>>();
 
-    result.sort_by_key(|x| x.0);
+    result.sort_by_cached_key(|entry| {
+      character_dictionary
+        .stroke_count(if simplified {
+          &entry.simplified
+        } else {
+          &entry.traditional
+        })
+        .unwrap_or(usize::MAX)
+    });
 
     JsValue::from(
       result
         .into_iter()
         .take(limit)
-        .map(|x| x.1)
+        .map(JsWordEntry::from)
+        .collect::<Array>(),
+    )
+    .into()
+  }
+
+  #[wasm_bindgen(js_name = "getHomophones")]
+  pub async fn get_homophones(
+    &self,
+    word: &str,
+    simplified: bool,
+  ) -> JsWordEntryArray {
+    let character_dictionary = self.character_dict.get().await;
+
+    let mut result = self
+      .word_dict
+      .get()
+      .await
+      .iter_homophones(
+        word,
+        if simplified {
+          WordDictionaryType::Simplified
+        } else {
+          WordDictionaryType::Traditional
+        },
+      )
+      .collect::<Vec<_>>();
+
+    result.sort_by_cached_key(|(entry, exact)| {
+      (
+        !*exact,
+        character_dictionary
+          .stroke_count(if simplified {
+            &*entry.simplified
+          } else {
+            &*entry.traditional
+          })
+          .unwrap_or(usize::MAX),
+      )
+    });
+
+    JsValue::from(
+      result
+        .into_iter()
+        .map(|(entry, _)| JsWordEntry::from(entry))
         .collect::<Array>(),
     )
     .into()
@@ -349,18 +389,21 @@ impl Worker {
           )
           .is_some()
       })
-      .map(|entry| {
-        (
-          character_dictionary
-            .stroke_count(&entry.character.to_string())
-            .unwrap_or(usize::MAX),
-          JsCharacterEntry::from(entry),
-        )
-      })
       .collect::<Vec<_>>();
 
-    result.sort_by_key(|x| x.0);
-    JsValue::from(result.into_iter().map(|x| x.1).collect::<Array>()).into()
+    result.sort_by_cached_key(|entry| {
+      character_dictionary
+        .stroke_count(&entry.character.to_string())
+        .unwrap_or(usize::MAX)
+    });
+
+    JsValue::from(
+      result
+        .into_iter()
+        .map(JsCharacterEntry::from)
+        .collect::<Array>(),
+    )
+    .into()
   }
 
   #[wasm_bindgen(js_name = "decompose")]

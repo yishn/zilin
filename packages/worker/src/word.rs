@@ -148,6 +148,52 @@ impl WordDictionary {
     })
   }
 
+  pub fn iter_homophones<'a>(
+    &'a self,
+    word: &'a str,
+    ty: WordDictionaryType,
+  ) -> impl Iterator<Item = (&'a WordEntry, bool)> {
+    fn normalize_pinyin(pinyin: &str) -> String {
+      pinyin
+        .to_ascii_lowercase()
+        .replace(|ch: char| ch.is_ascii_digit(), "")
+    }
+
+    let entries = self
+      .get(word, ty)
+      .map(|entries| entries.iter())
+      .into_iter()
+      .flatten();
+    let exact_pinyins = entries
+      .clone()
+      .map(|entry| entry.pinyin.to_ascii_lowercase())
+      .collect::<Vec<_>>();
+    let normalized_pinyins = entries
+      .clone()
+      .map(|entry| normalize_pinyin(&entry.pinyin))
+      .collect::<Vec<_>>();
+
+    self
+      .iter(ty)
+      .filter(move |entry| {
+        word
+          != match ty {
+            WordDictionaryType::Simplified => &*entry.simplified,
+            WordDictionaryType::Traditional => &*entry.traditional,
+          }
+      })
+      .filter_map(move |entry| {
+        exact_pinyins
+          .contains(&entry.pinyin.to_ascii_lowercase())
+          .then(|| (entry, true))
+          .or_else(|| {
+            normalized_pinyins
+              .contains(&normalize_pinyin(&entry.pinyin))
+              .then(|| (entry, false))
+          })
+      })
+  }
+
   pub fn tokenize(&self, input: &str) -> Vec<Token> {
     let mut chars = input.char_indices().peekable();
     let mut tokens = vec![];

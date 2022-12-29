@@ -142,6 +142,7 @@ export interface DictionaryPaneProps {
   variants?: string[];
   meanings?: DictionaryMeaning[];
   sentences?: SentenceEntry[];
+  homophones?: string[];
   characters?: DictionaryCharacterInfo[];
 }
 
@@ -187,6 +188,8 @@ export const DictionaryPane: React.FunctionComponent<DictionaryPaneProps> = (
           <MeaningsList meanings={props.meanings} />
 
           <SentencesList sentences={props.sentences} length={3} />
+
+          <WordList title="Homophones" words={props.homophones} length={10} />
         </div>
       )}
 
@@ -269,7 +272,15 @@ export const DictionaryPane: React.FunctionComponent<DictionaryPaneProps> = (
               )}
 
               {!oneCharacter ? null : (
-                <SentencesList sentences={props.sentences} length={3} />
+                <>
+                  <SentencesList sentences={props.sentences} length={3} />
+
+                  <WordList
+                    title="Homophones"
+                    words={props.homophones}
+                    length={10}
+                  />
+                </>
               )}
 
               <WordList

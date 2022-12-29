@@ -139,6 +139,14 @@ export const App: React.FunctionalComponent = () => {
         );
   }, [mode, highlight]);
 
+  const homophones = useAsync(async () => {
+    return highlight == null
+      ? []
+      : (await tokenizer.getHomophones(highlight, mode === "simplified"))
+          .map((entry) => entry[mode])
+          .filter((value, i, arr) => i === 0 || value !== arr[i - 1]);
+  }, [mode, highlight]);
+
   function getVariants(character: string, entries: WordEntry[]): string[] {
     const set = new Set(
       entries.flatMap((entry) => [entry.simplified, entry.traditional])
@@ -308,6 +316,7 @@ export const App: React.FunctionalComponent = () => {
             explanation: prettifyExplanation(entry.english),
           }))}
           sentences={sentences.value}
+          homophones={homophones.value}
           characters={characters.value}
         />
       </aside>
