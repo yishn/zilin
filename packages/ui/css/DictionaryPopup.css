@@ -1,0 +1,27 @@
+.dictionary-popup {
+  position: absolute;
+  margin: 1.2em 0;
+  border: 1px solid rgba(var(--text-color), 0.2);
+  box-shadow: 0 0.5rem 0.5rem rgba(var(--dark-background-color), 0.2);
+  border-radius: 0.5em;
+  max-width: 16em;
+  background-color: rgba(var(--popup-background-color), 0.9);
+  backdrop-filter: blur(0.2rem);
+  transition: opacity 0.2s;
+}
+
+.dictionary-popup .pronunciation,
+.dictionary-popup .meanings li.more {
+  padding: 0.2rem 1rem;
+  text-align: center;
+  font-size: 0.8em;
+}
+
+.dictionary-popup .meanings {
+  list-style: none;
+}
+
+.dictionary-popup .meanings li {
+  border-top: 1px solid rgba(var(--text-color), 0.2);
+  padding: 0.2rem 1rem;
+}

@@ -1,9 +1,11 @@
 import * as React from "preact";
 import { useEffect, useState } from "preact/hooks";
 import { LinkifiedText } from "./LinkifiedText.tsx";
+import { ModeValue } from "./ModeSwitcher.tsx";
 
 export interface WordListProps {
   title?: string;
+  mode?: ModeValue;
   words?: string[];
   length?: number;
 }

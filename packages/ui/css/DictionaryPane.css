@@ -84,7 +84,7 @@
   margin: 0.5em 0;
 }
 
-.dictionary-pane .meanings-list .pinyin {
+.dictionary-pane .meanings-list .pronunciation {
   margin-right: 1rem;
   color: rgb(var(--light-text-color));
 }

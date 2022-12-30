@@ -1,6 +1,7 @@
 import * as React from "preact";
 import { useAsync } from "../hooks/useAsync.ts";
 import { getWasmWorker } from "../worker.ts";
+import { DictionaryPopupLink } from "./DictionaryPopup.tsx";
 
 export interface LinkifiedTextProps {
   value: string;
@@ -10,8 +11,10 @@ export interface LinkifiedTextProps {
 export const LinkifiedText: React.FunctionComponent<LinkifiedTextProps> = (
   props
 ) => {
+  const wasmWorker = getWasmWorker();
+
   const tokens = useAsync(async () => {
-    return await getWasmWorker().tokenize(props.value);
+    return await wasmWorker.tokenize(props.value);
   }, [props.value]);
 
   return (
@@ -21,7 +24,7 @@ export const LinkifiedText: React.FunctionComponent<LinkifiedTextProps> = (
       ) : (
         tokens.value.map((token) => {
           if (token.hasEntries) {
-            return <a href={"#" + token.value}>{token.value}</a>;
+            return <DictionaryPopupLink word={token.value} />;
           } else if (
             props.handleSeparators &&
             (token.value === "/" || token.value === "|")

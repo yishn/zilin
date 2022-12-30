@@ -3,6 +3,7 @@ import type { JSX } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { useResizeObserver } from "../hooks/useResizeObserver.ts";
 import { useAsync } from "../hooks/useAsync.ts";
+import { DictionaryPopupLink } from "./DictionaryPopup.tsx";
 
 export interface Token {
   value: string;
@@ -35,7 +36,7 @@ export const TokenTextarea: React.FunctionComponent<TokenTextareaProps> = (
 ) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const tokensContainerRef = useRef<HTMLDivElement>(null);
-  const contentSize = useResizeObserver(tokensContainerRef);
+  const contentSize = useResizeObserver(tokensContainerRef.current);
 
   const [tokenRects, setTokenRects] = useState<
     {
@@ -136,7 +137,9 @@ export const TokenTextarea: React.FunctionComponent<TokenTextareaProps> = (
                       "--frequency": token.frequency ?? 50,
                     }}
                   >
-                    {!token.unselectable && <a href={"#" + token.value} />}
+                    {!token.unselectable && (
+                      <DictionaryPopupLink word={token.value} text="" />
+                    )}
                   </span>
                 ))}
 

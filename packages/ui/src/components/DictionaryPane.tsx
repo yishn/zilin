@@ -65,7 +65,7 @@ const MeaningsList: React.FunctionComponent<MeaningsListProps> = (props) => {
     <ul class="meanings-list">
       {props.meanings?.map((entry) => (
         <li>
-          <span class="pinyin">{entry.pinyin}</span>{" "}
+          <span class="pronunciation">{entry.pinyin}</span>{" "}
           <span class="explanation">
             <LinkifiedText value={entry.explanation} handleSeparators={true} />
           </span>

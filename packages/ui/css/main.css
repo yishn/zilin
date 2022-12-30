@@ -2,6 +2,7 @@
 @import url("./TokenTextarea.css");
 @import url("./ModeSwitcher.css");
 @import url("./DictionaryPane.css");
+@import url("./DictionaryPopup.css");
 @import url("./WordList.css");
 
 * {
@@ -18,6 +19,7 @@ html {
   --dark-scrollbar-color: 116, 180, 91;
   --dark-background-color: 22, 15, 22;
   --dark-background-color-lighter: 46, 31, 41;
+  --popup-background-color: 221, 213, 222;
   --light-text-color: 250, 255, 239;
   --light-link-text-color: 251, 138, 255;
   --color-accent-1: 79, 54, 76;
@@ -41,6 +43,19 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
+}
+
+#popup {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+#popup > * {
+  pointer-events: all;
 }
 
 ul {
