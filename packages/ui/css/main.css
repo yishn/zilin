@@ -55,10 +55,6 @@ body {
   pointer-events: none;
 }
 
-#popup > * {
-  pointer-events: all;
-}
-
 ul {
   list-style: square;
 }

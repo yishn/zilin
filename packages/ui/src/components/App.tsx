@@ -73,6 +73,7 @@ export const App: React.FunctionalComponent = () => {
           };
 
     return {
+      word: highlight,
       dictionaryEntries,
       homophones:
         highlight == null
@@ -162,9 +163,11 @@ export const App: React.FunctionalComponent = () => {
   useEffect(
     function updateTitle() {
       document.title =
-        (highlight?.length ?? 0) <= 0 ? "Zilin" : `Zilin – ${highlight}`;
+        (wordInfo.continuousValue?.word?.length ?? 0) <= 0
+          ? "Zilin"
+          : `Zilin – ${wordInfo.continuousValue?.word}`;
     },
-    [highlight]
+    [wordInfo.continuousValue]
   );
 
   useEffect(
@@ -240,7 +243,7 @@ export const App: React.FunctionalComponent = () => {
             word={
               (wordInfo.continuousValue?.dictionaryEntries[mode].length ?? 0) >
               0
-                ? highlight
+                ? wordInfo.continuousValue?.word
                 : undefined
             }
             variants={wordInfo.continuousValue?.variants}

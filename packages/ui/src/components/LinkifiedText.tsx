@@ -20,7 +20,7 @@ export const LinkifiedText: React.FunctionComponent<LinkifiedTextProps> = (
   return (
     <>
       {tokens.value == null ? (
-        <span style={{ visibility: "hidden" }}>_</span>
+        <span style={{ visibility: "hidden" }}>{props.value}</span>
       ) : (
         tokens.value.map((token) => {
           if (token.hasEntries) {

@@ -59,6 +59,7 @@ export const DictionaryPopupLink: React.FunctionComponent<
                 !meaning.includes("CL:") &&
                 !meaning.includes("variant of")
             );
+          if (meanings.length === 0) return;
 
           closeDictionayPopup.current = showDictionaryPopup(
             {
