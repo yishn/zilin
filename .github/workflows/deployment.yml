@@ -36,6 +36,8 @@ jobs:
           deno-version: 1.x
       - name: Setup Rust
         uses: actions-rs/toolchain@v1.0.6
+        with:
+          toolchain: stable
       - name: Setup Pages
         uses: actions/configure-pages@v2
       - name: Build
