@@ -10,6 +10,16 @@ import type { WordEntry } from "../worker.ts";
 
 export const ModeContext = React.createContext<ModeValue>("simplified");
 
+function getVariants(character: string, entries: WordEntry[]): string[] {
+  const set = new Set(
+    entries.flatMap((entry) => [entry.simplified, entry.traditional])
+  );
+
+  set.delete(character);
+
+  return [...set].sort();
+}
+
 export const App: React.FunctionalComponent = () => {
   const wasmWorker = getWasmWorker();
 
@@ -53,16 +63,26 @@ export const App: React.FunctionalComponent = () => {
     );
   }, [tokens.continuousValue]);
 
-  const dictionaryEntries = useAsync(
-    async () =>
+  const wordInfo = useAsync(async () => {
+    const dictionaryEntries =
       highlight == null
         ? { simplified: [], traditional: [] }
         : {
             simplified: await lookup(highlight, "simplified"),
             traditional: await lookup(highlight, "traditional"),
-          },
-    [mode, highlight]
-  );
+          };
+
+    return {
+      dictionaryEntries,
+      homophones:
+        highlight == null
+          ? []
+          : (await wasmWorker.getHomophones(highlight, mode === "simplified"))
+              .map((entry) => entry[mode])
+              .filter((value, i, arr) => i === 0 || value !== arr[i - 1]),
+      variants: getVariants(highlight ?? "", dictionaryEntries[mode] ?? []),
+    };
+  }, [mode, highlight]);
 
   const sentences = useAsync(async () => {
     return highlight == null
@@ -74,39 +94,12 @@ export const App: React.FunctionalComponent = () => {
         );
   }, [mode, highlight]);
 
-  const homophones = useAsync(async () => {
-    return highlight == null
-      ? []
-      : (await wasmWorker.getHomophones(highlight, mode === "simplified"))
-          .map((entry) => entry[mode])
-          .filter((value, i, arr) => i === 0 || value !== arr[i - 1]);
-  }, [mode, highlight]);
-
-  function getVariants(character: string, entries: WordEntry[]): string[] {
-    const set = new Set(
-      entries.flatMap((entry) => [entry.simplified, entry.traditional])
-    );
-
-    set.delete(character);
-
-    return [...set].sort();
-  }
-
-  const wordVariants = useMemo(
-    () =>
-      getVariants(
-        highlight ?? "",
-        dictionaryEntries.continuousValue?.[mode] ?? []
-      ),
-    [dictionaryEntries.continuousValue]
-  );
-
   const characters = useAsync(
     async () =>
       await Promise.all(
         [
-          ...((dictionaryEntries.continuousValue?.[mode].length ?? 0) > 0 &&
-          highlight != null
+          ...((wordInfo.continuousValue?.dictionaryEntries[mode].length ?? 0) >
+            0 && highlight != null
             ? highlight
             : ""),
         ].map<Promise<DictionaryCharacterInfo>>(async (character) => {
@@ -163,7 +156,7 @@ export const App: React.FunctionalComponent = () => {
           };
         })
       ),
-    [mode, highlight, dictionaryEntries.continuousValue]
+    [mode, highlight, wordInfo.continuousValue]
   );
 
   useEffect(
@@ -176,15 +169,18 @@ export const App: React.FunctionalComponent = () => {
 
   useEffect(
     function switchMode() {
-      if (highlight != null && dictionaryEntries.value?.[mode].length === 0) {
+      if (
+        highlight != null &&
+        wordInfo.value?.dictionaryEntries[mode].length === 0
+      ) {
         const otherMode = mode === "simplified" ? "traditional" : "simplified";
 
-        if (dictionaryEntries.value[otherMode].length > 0) {
+        if (wordInfo.value?.dictionaryEntries[otherMode].length > 0) {
           setMode(otherMode);
         }
       }
     },
-    [dictionaryEntries.value]
+    [wordInfo.value]
   );
 
   useEffect(function handleHistory() {
@@ -223,13 +219,13 @@ export const App: React.FunctionalComponent = () => {
           <ModeSwitcher
             mode={mode}
             onChange={(evt) => {
-              const needHighlightChange = !dictionaryEntries.value?.[mode].some(
-                (entry) => entry[evt.mode] === highlight
-              );
+              const needHighlightChange = !wordInfo.value?.dictionaryEntries[
+                mode
+              ].some((entry) => entry[evt.mode] === highlight);
 
               if (needHighlightChange) {
                 const newHighlight =
-                  dictionaryEntries.value?.[mode][0]?.[evt.mode];
+                  wordInfo.value?.dictionaryEntries[mode][0]?.[evt.mode];
 
                 if (newHighlight != null) {
                   globalThis.location.href = "#" + newHighlight;
@@ -242,19 +238,20 @@ export const App: React.FunctionalComponent = () => {
 
           <DictionaryPane
             word={
-              (dictionaryEntries.continuousValue?.[mode].length ?? 0) > 0
+              (wordInfo.continuousValue?.dictionaryEntries[mode].length ?? 0) >
+              0
                 ? highlight
                 : undefined
             }
-            variants={wordVariants}
-            meanings={dictionaryEntries.continuousValue?.[mode].map(
+            variants={wordInfo.continuousValue?.variants}
+            meanings={wordInfo.continuousValue?.dictionaryEntries[mode].map(
               (entry) => ({
                 pinyin: prettifyPinyin(entry.pinyin),
                 explanation: prettifyExplanation(entry.english),
               })
             )}
             sentences={sentences.value}
-            homophones={homophones.value}
+            homophones={wordInfo.value?.homophones}
             characters={characters.value}
           />
         </aside>
