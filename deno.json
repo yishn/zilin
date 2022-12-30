@@ -4,6 +4,7 @@
   },
   "importMap": "./import_map.json",
   "tasks": {
+    "test": "cargo test",
     "build-wasm": "wasm-pack build --target web ./packages/worker",
     "build-wasm-profiling": "deno task build-wasm --profiling",
     "build-ts": "deno bundle ./packages/ui/src/main.tsx ./packages/ui/dist/main.js && deno bundle ./packages/worker/src/main.ts ./packages/worker/dist/main.js",
