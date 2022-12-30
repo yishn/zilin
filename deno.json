@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "lib": ["esnext", "dom", "dom.iterable"]
+    "lib": ["esnext", "dom", "dom.iterable", "deno.ns"]
   },
   "importMap": "./import_map.json",
   "tasks": {
@@ -12,6 +12,7 @@
     "watch-ts": "deno bundle --watch ./packages/ui/src/main.tsx ./packages/ui/dist/main.js | deno bundle --watch ./packages/worker/src/main.ts ./packages/worker/dist/main.js",
     "build": "deno task build-wasm && deno task build-ts",
     "build-dev": "deno task build-wasm-dev && deno task build-ts",
-    "build-profiling": "deno task build-wasm-profiling && deno task build-ts"
+    "build-profiling": "deno task build-wasm-profiling && deno task build-ts",
+    "update-data": "deno run --allow-all --no-lock ./ci/updateData.ts"
   }
 }
