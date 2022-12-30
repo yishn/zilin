@@ -28,4 +28,4 @@ jobs:
     - name: Run tests
       run: deno task test
     - name: Build
-      run: deno task build
+      run: deno task build-dev
