@@ -180,7 +180,7 @@ export const DictionaryPane: React.FunctionComponent<DictionaryPaneProps> = (
           <ul class="variants">
             {props.variants?.map((variant) => (
               <li>
-                <LinkifiedText value={variant} />
+                <a href={"#" + variant}>{variant}</a>
               </li>
             ))}
           </ul>
@@ -252,7 +252,7 @@ export const DictionaryPane: React.FunctionComponent<DictionaryPaneProps> = (
                 <ul class="variants">
                   {info.variants?.map((variant) => (
                     <li>
-                      <LinkifiedText value={variant} />
+                      <a href={"#" + variant}>{variant}</a>
                     </li>
                   ))}
                 </ul>

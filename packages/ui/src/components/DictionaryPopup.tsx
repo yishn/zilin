@@ -55,7 +55,9 @@ export const DictionaryPopupLink: React.FunctionComponent<
             .map((meaning) => prettifyExplanation(meaning))
             .filter(
               (meaning) =>
-                !meaning.includes("surname") && !meaning.includes("CL:")
+                !meaning.includes("surname ") &&
+                !meaning.includes("CL:") &&
+                !meaning.includes("variant of")
             );
 
           closeDictionayPopup.current = showDictionaryPopup(
@@ -114,15 +116,20 @@ export const DictionaryPopup: React.FunctionComponent<DictionaryPopupProps> = (
       ref={containerRef}
       class="dictionary-popup"
       style={{
-        left: Math.max(
-          0,
-          Math.min(
-            (props.position?.[0] ?? 0) - (containerSize?.width ?? 0) / 2,
-            (overlaySize?.width ?? 0) - (containerSize?.width ?? 0)
-          )
-        ),
+        left:
+          containerSize == null
+            ? 0
+            : Math.max(
+                0,
+                Math.min(
+                  (props.position?.[0] ?? 0) - (containerSize?.width ?? 0) / 2,
+                  (overlaySize?.width ?? 0) - (containerSize?.width ?? 0)
+                )
+              ),
         [orientation === "top" ? "bottom" : "top"]:
-          orientation === "top"
+          containerSize == null
+            ? 0
+            : orientation === "top"
             ? (overlaySize?.height ?? 0) - (props.position?.[1] ?? 0)
             : props.position?.[1],
         opacity: containerSize == null ? 0 : 1,

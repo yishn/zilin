@@ -2,10 +2,9 @@
   position: absolute;
   margin: 1.2em 0;
   border: 1px solid rgba(var(--text-color), 0.2);
-  box-shadow: 0 0.5rem 0.5rem rgba(var(--dark-background-color), 0.2);
   border-radius: 0.5em;
   max-width: 16em;
-  background-color: rgba(var(--popup-background-color), 0.9);
+  background-color: rgba(var(--popup-background-color), 0.8);
   backdrop-filter: blur(0.2rem);
   transition: opacity 0.2s;
 }
