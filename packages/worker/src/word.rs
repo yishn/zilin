@@ -24,16 +24,16 @@ pub struct Token {
   pub has_entries: bool,
 }
 
-#[derive(Debug, Clone)]
-pub struct WordDictionary {
-  simplified: Trie<Vec<WordEntry>>,
-  traditional: Trie<Vec<WordEntry>>,
-}
-
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum WordDictionaryType {
   Simplified,
   Traditional,
+}
+
+#[derive(Debug, Clone)]
+pub struct WordDictionary {
+  simplified: Trie<Vec<WordEntry>>,
+  traditional: Trie<Vec<WordEntry>>,
 }
 
 impl WordDictionary {
@@ -126,11 +126,8 @@ impl WordDictionary {
     .flat_map(|vec| vec.iter())
   }
 
-  pub fn iter(
-    &self,
-    ty: WordDictionaryType,
-  ) -> impl Iterator<Item = &WordEntry> {
-    self.iter_prefix("", ty)
+  pub fn iter(&self) -> impl Iterator<Item = &WordEntry> {
+    self.iter_prefix("", WordDictionaryType::Traditional)
   }
 
   pub fn iter_including_subslice<'a>(
@@ -138,7 +135,7 @@ impl WordDictionary {
     slice: &'a str,
     ty: WordDictionaryType,
   ) -> impl Iterator<Item = &'a WordEntry> {
-    self.iter(ty).filter(move |entry| {
+    self.iter().filter(move |entry| {
       let word = match ty {
         WordDictionaryType::Simplified => &entry.simplified,
         WordDictionaryType::Traditional => &entry.traditional,
@@ -174,7 +171,7 @@ impl WordDictionary {
       .collect::<Vec<_>>();
 
     self
-      .iter(ty)
+      .iter()
       .filter(move |entry| {
         word
           != match ty {
