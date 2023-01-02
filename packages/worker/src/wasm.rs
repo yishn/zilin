@@ -234,7 +234,7 @@ impl Worker {
       }
     });
 
-    let thesaurus_dict = MaybeDone::new(&Promise::resolve(&JsValue::NULL), {
+    let thesaurus_dict = MaybeDone::new(&sentences_dict_data, {
       let word_dict = word_dict.clone();
 
       move |_| {

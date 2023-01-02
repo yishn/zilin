@@ -30,11 +30,17 @@ impl ThesaurusDictionary {
 
       simplified
         .entry(entry.simplified.to_string())
-        .or_insert(HashSet::default())
+        .or_insert(HashSet::with_capacity_and_hasher(
+          keywords.capacity(),
+          Default::default(),
+        ))
         .extend(keywords.clone().into_iter());
       traditional
         .entry(entry.traditional.to_string())
-        .or_insert(HashSet::default())
+        .or_insert(HashSet::with_capacity_and_hasher(
+          keywords.capacity(),
+          Default::default(),
+        ))
         .extend(keywords.into_iter());
     }
 

@@ -86,16 +86,6 @@ export const App: React.FunctionalComponent = () => {
               .filter(
                 (entry, i, arr) => i === 0 || entry.value !== arr[i - 1].value
               ),
-      similar:
-        highlight == null
-          ? []
-          : (
-              await wasmWorker.getSimilarWords(
-                highlight,
-                10,
-                mode === "simplified"
-              )
-            ).map((entry) => entry[0]),
       variants: getVariants(highlight ?? "", dictionaryEntries[mode] ?? []),
     };
   }, [mode, highlight]);
@@ -109,6 +99,14 @@ export const App: React.FunctionalComponent = () => {
           mode === "simplified"
         );
   }, [mode, highlight]);
+
+  const similar = useAsync(async () => {
+    return highlight == null
+      ? []
+      : (
+          await wasmWorker.getSimilarWords(highlight, 10, mode === "simplified")
+        ).map((entry) => entry[0]);
+  }, [highlight, mode]);
 
   const characters = useAsync(
     async () =>
@@ -270,7 +268,7 @@ export const App: React.FunctionalComponent = () => {
             )}
             sentences={sentences.value}
             homophones={wordInfo.value?.homophones}
-            similar={wordInfo.value?.similar}
+            similar={similar.value}
             characters={characters.value}
           />
         </aside>
