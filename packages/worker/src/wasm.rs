@@ -8,7 +8,7 @@ use wasm_bindgen_futures::JsFuture;
 use crate::{
   character::{CharacterDecomposition, CharacterDictionary, CharacterEntry},
   word::{Token, WordDictionary, WordEntry},
-  FrequencyDictionary, SentenceDictionary, WordDictionaryType,
+  DictionaryType, FrequencyDictionary, SentenceDictionary, ThesaurusDictionary,
 };
 
 #[wasm_bindgen(typescript_custom_section)]
@@ -88,6 +88,9 @@ extern "C" {
 
   #[wasm_bindgen(typescript_type = "[sentence: string, english: string][]")]
   pub type JsSentenceArray;
+
+  #[wasm_bindgen(typescript_type = "[word: string, score: number][]")]
+  pub type JsWordScoreArray;
 }
 
 impl<'a> From<&'a Token> for JsToken {
@@ -132,12 +135,12 @@ impl<T> Clone for MaybeDone<T> {
 
 impl<T> MaybeDone<T> {
   pub fn new(
-    promise: Promise,
+    promise: &Promise,
     f: impl Fn(Result<JsValue, JsValue>) -> Pin<Box<dyn Future<Output = T>>>
       + 'static,
   ) -> Self {
     Self {
-      promise: RefCell::new(Some(promise)),
+      promise: RefCell::new(Some(promise.clone())),
       f: Rc::new(f),
       data: Rc::new(OnceCell::new()),
     }
@@ -169,6 +172,7 @@ pub struct Worker {
   character_dict: MaybeDone<CharacterDictionary>,
   frequency_dict: MaybeDone<FrequencyDictionary>,
   sentences_dict: MaybeDone<SentenceDictionary>,
+  thesaurus_dict: MaybeDone<ThesaurusDictionary>,
 }
 
 #[wasm_bindgen]
@@ -180,7 +184,7 @@ impl Worker {
     frequency_dict_data: Promise,
     sentences_dict_data: Promise,
   ) -> Self {
-    let word_dict = MaybeDone::new(word_dict_data, |data| {
+    let word_dict = MaybeDone::new(&word_dict_data, |data| {
       Box::pin(async {
         let data = data
           .ok()
@@ -191,7 +195,7 @@ impl Worker {
       })
     });
 
-    let character_dict = MaybeDone::new(character_dict_data, |data| {
+    let character_dict = MaybeDone::new(&character_dict_data, |data| {
       Box::pin(async {
         let data = data
           .ok()
@@ -202,7 +206,7 @@ impl Worker {
       })
     });
 
-    let frequency_dict = MaybeDone::new(frequency_dict_data, |data| {
+    let frequency_dict = MaybeDone::new(&frequency_dict_data, |data| {
       Box::pin(async {
         let data = data
           .ok()
@@ -213,7 +217,7 @@ impl Worker {
       })
     });
 
-    let sentences_dict = MaybeDone::new(sentences_dict_data, {
+    let sentences_dict = MaybeDone::new(&sentences_dict_data, {
       let word_dict = word_dict.clone();
 
       move |data| {
@@ -230,11 +234,22 @@ impl Worker {
       }
     });
 
+    let thesaurus_dict = MaybeDone::new(&Promise::resolve(&JsValue::NULL), {
+      let word_dict = word_dict.clone();
+
+      move |_| {
+        let word_dict = word_dict.clone();
+
+        Box::pin(async move { ThesaurusDictionary::new(word_dict.get().await) })
+      }
+    });
+
     Self {
       word_dict,
       character_dict,
       frequency_dict,
       sentences_dict,
+      thesaurus_dict,
     }
   }
 
@@ -258,9 +273,9 @@ impl Worker {
         .get(
           word,
           if simplified {
-            WordDictionaryType::Simplified
+            DictionaryType::Simplified
           } else {
-            WordDictionaryType::Traditional
+            DictionaryType::Traditional
           },
         )
         .map(|entries| entries.iter().map(JsWordEntry::from).collect::<Array>())
@@ -285,9 +300,9 @@ impl Worker {
       .iter_including_subslice(
         slice,
         if simplified {
-          WordDictionaryType::Simplified
+          DictionaryType::Simplified
         } else {
-          WordDictionaryType::Traditional
+          DictionaryType::Traditional
         },
       )
       .collect::<Vec<_>>();
@@ -327,9 +342,9 @@ impl Worker {
       .iter_homophones(
         word,
         if simplified {
-          WordDictionaryType::Simplified
+          DictionaryType::Simplified
         } else {
-          WordDictionaryType::Traditional
+          DictionaryType::Traditional
         },
       )
       .collect::<Vec<_>>();
@@ -387,9 +402,9 @@ impl Worker {
           .get(
             &entry.character.to_string(),
             if simplified {
-              WordDictionaryType::Simplified
+              DictionaryType::Simplified
             } else {
-              WordDictionaryType::Traditional
+              DictionaryType::Traditional
             },
           )
           .is_some()
@@ -432,8 +447,8 @@ impl Worker {
         .filter_map(|word| word.as_string())
         .map(|word| {
           word_dict
-            .get(&word, WordDictionaryType::Traditional)
-            .or(word_dict.get(&word, WordDictionaryType::Simplified))
+            .get(&word, DictionaryType::Traditional)
+            .or(word_dict.get(&word, DictionaryType::Simplified))
             .map(|entries| {
               entries
                 .iter()
@@ -464,9 +479,9 @@ impl Worker {
       .iter_sentences_including_word(
         word,
         if simplified {
-          WordDictionaryType::Simplified
+          DictionaryType::Simplified
         } else {
-          WordDictionaryType::Traditional
+          DictionaryType::Traditional
         },
       )
       .collect::<Vec<_>>();
@@ -478,6 +493,36 @@ impl Worker {
         .into_iter()
         .take(limit)
         .map(|entry| serde_wasm_bindgen::to_value(&entry).unwrap_throw())
+        .collect::<Array>(),
+    )
+    .into()
+  }
+
+  #[wasm_bindgen(js_name = "getSimilarWords")]
+  pub async fn get_similar_words(
+    &self,
+    word: &str,
+    limit: usize,
+    simplified: bool,
+  ) -> JsWordScoreArray {
+    JsValue::from(
+      self
+        .thesaurus_dict
+        .get()
+        .await
+        .get_similar_words(
+          word,
+          if simplified {
+            DictionaryType::Simplified
+          } else {
+            DictionaryType::Traditional
+          },
+        )
+        .into_iter()
+        .take(limit)
+        .map(|(word, score)| {
+          serde_wasm_bindgen::to_value(&(word, score)).unwrap_throw()
+        })
         .collect::<Array>(),
     )
     .into()

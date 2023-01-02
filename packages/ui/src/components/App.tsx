@@ -86,6 +86,16 @@ export const App: React.FunctionalComponent = () => {
               .filter(
                 (entry, i, arr) => i === 0 || entry.value !== arr[i - 1].value
               ),
+      similar:
+        highlight == null
+          ? []
+          : (
+              await wasmWorker.getSimilarWords(
+                highlight,
+                10,
+                mode === "simplified"
+              )
+            ).map((entry) => entry[0]),
       variants: getVariants(highlight ?? "", dictionaryEntries[mode] ?? []),
     };
   }, [mode, highlight]);
@@ -153,7 +163,7 @@ export const App: React.FunctionalComponent = () => {
             characterOf: (
               await wasmWorker.getWordsIncludingSubslice(
                 character,
-                100,
+                200,
                 mode === "simplified"
               )
             )
@@ -260,6 +270,7 @@ export const App: React.FunctionalComponent = () => {
             )}
             sentences={sentences.value}
             homophones={wordInfo.value?.homophones}
+            similar={wordInfo.value?.similar}
             characters={characters.value}
           />
         </aside>

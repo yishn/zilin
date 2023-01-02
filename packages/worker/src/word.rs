@@ -25,7 +25,7 @@ pub struct Token {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub enum WordDictionaryType {
+pub enum DictionaryType {
   Simplified,
   Traditional,
 }
@@ -101,14 +101,10 @@ impl WordDictionary {
     result
   }
 
-  pub fn get(
-    &self,
-    word: &str,
-    ty: WordDictionaryType,
-  ) -> Option<&Vec<WordEntry>> {
+  pub fn get(&self, word: &str, ty: DictionaryType) -> Option<&Vec<WordEntry>> {
     match ty {
-      WordDictionaryType::Simplified => &self.simplified,
-      WordDictionaryType::Traditional => &self.traditional,
+      DictionaryType::Simplified => &self.simplified,
+      DictionaryType::Traditional => &self.traditional,
     }
     .get(word)
   }
@@ -116,29 +112,29 @@ impl WordDictionary {
   pub fn iter_prefix(
     &self,
     word: &str,
-    ty: WordDictionaryType,
+    ty: DictionaryType,
   ) -> impl Iterator<Item = &WordEntry> {
     match ty {
-      WordDictionaryType::Simplified => &self.simplified,
-      WordDictionaryType::Traditional => &self.traditional,
+      DictionaryType::Simplified => &self.simplified,
+      DictionaryType::Traditional => &self.traditional,
     }
     .iter_prefix(word)
     .flat_map(|vec| vec.iter())
   }
 
   pub fn iter(&self) -> impl Iterator<Item = &WordEntry> {
-    self.iter_prefix("", WordDictionaryType::Traditional)
+    self.iter_prefix("", DictionaryType::Traditional)
   }
 
   pub fn iter_including_subslice<'a>(
     &'a self,
     slice: &'a str,
-    ty: WordDictionaryType,
+    ty: DictionaryType,
   ) -> impl Iterator<Item = &'a WordEntry> {
     self.iter().filter(move |entry| {
       let word = match ty {
-        WordDictionaryType::Simplified => &entry.simplified,
-        WordDictionaryType::Traditional => &entry.traditional,
+        DictionaryType::Simplified => &entry.simplified,
+        DictionaryType::Traditional => &entry.traditional,
       };
 
       &**word != slice && word.contains(slice)
@@ -148,7 +144,7 @@ impl WordDictionary {
   pub fn iter_homophones<'a>(
     &'a self,
     word: &'a str,
-    ty: WordDictionaryType,
+    ty: DictionaryType,
   ) -> impl Iterator<Item = (&'a WordEntry, bool)> {
     fn normalize_pinyin(pinyin: &str) -> String {
       pinyin
@@ -175,10 +171,11 @@ impl WordDictionary {
       .filter(move |entry| {
         word
           != match ty {
-            WordDictionaryType::Simplified => &*entry.simplified,
-            WordDictionaryType::Traditional => &*entry.traditional,
+            DictionaryType::Simplified => &*entry.simplified,
+            DictionaryType::Traditional => &*entry.traditional,
           }
       })
+      .filter(|entry| !entry.english.contains("variant of"))
       .filter_map(move |entry| {
         exact_pinyins
           .contains(&entry.pinyin.to_ascii_lowercase())
@@ -200,8 +197,8 @@ impl WordDictionary {
       tokens.push(Token {
         value: word.into(),
         offset,
-        has_entries: self.get(word, WordDictionaryType::Simplified).is_some()
-          || self.get(word, WordDictionaryType::Traditional).is_some(),
+        has_entries: self.get(word, DictionaryType::Simplified).is_some()
+          || self.get(word, DictionaryType::Traditional).is_some(),
       });
 
       offset += word.chars().count();
@@ -216,8 +213,8 @@ impl WordDictionary {
         let mut found_word = None::<&str>;
 
         let entries = self
-          .iter_prefix(&prefix, WordDictionaryType::Simplified)
-          .chain(self.iter_prefix(&prefix, WordDictionaryType::Traditional));
+          .iter_prefix(&prefix, DictionaryType::Simplified)
+          .chain(self.iter_prefix(&prefix, DictionaryType::Traditional));
 
         for entry in entries {
           let new_found_word = if sliced_input.starts_with(&*entry.simplified) {
@@ -256,11 +253,11 @@ impl WordDictionary {
         !ch.is_ascii_alphanumeric()
           && (CHINESE_PUNCTUATION.contains(&ch)
             || self
-              .get(&ch.to_string(), WordDictionaryType::Simplified)
+              .get(&ch.to_string(), DictionaryType::Simplified)
               .map(|vec| vec.len() > 0)
               .unwrap_or(false)
             || self
-              .get(&ch.to_string(), WordDictionaryType::Traditional)
+              .get(&ch.to_string(), DictionaryType::Traditional)
               .map(|vec| vec.len() > 0)
               .unwrap_or(false))
       };
@@ -296,7 +293,7 @@ impl WordDictionary {
 mod tests {
   use once_cell::sync::Lazy;
 
-  use super::{WordDictionary, WordDictionaryType};
+  use super::{DictionaryType, WordDictionary};
 
   static CEDICT_DATA: Lazy<WordDictionary> = Lazy::new(|| {
     WordDictionary::new(include_str!(
@@ -306,9 +303,7 @@ mod tests {
 
   #[test]
   fn can_get_word_entry() {
-    let data = CEDICT_DATA
-      .get("识字", WordDictionaryType::Simplified)
-      .unwrap();
+    let data = CEDICT_DATA.get("识字", DictionaryType::Simplified).unwrap();
 
     assert_eq!(data.len(), 1);
     assert_eq!(&*data[0].simplified, "识字");
@@ -318,7 +313,7 @@ mod tests {
   #[test]
   fn can_get_all_words_with_prefix() {
     let data = CEDICT_DATA
-      .iter_prefix("中国", WordDictionaryType::Simplified)
+      .iter_prefix("中国", DictionaryType::Simplified)
       .collect::<Vec<_>>();
 
     assert!(data.len() > 2);
@@ -326,9 +321,7 @@ mod tests {
 
   #[test]
   fn can_get_multiple_word_entries() {
-    let data = CEDICT_DATA
-      .get("沈", WordDictionaryType::Simplified)
-      .unwrap();
+    let data = CEDICT_DATA.get("沈", DictionaryType::Simplified).unwrap();
 
     assert_eq!(data.len(), 3);
   }

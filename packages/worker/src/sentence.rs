@@ -1,7 +1,7 @@
 use rustc_hash::FxHashMap as HashMap;
 use std::sync::Arc;
 
-use crate::{WordDictionary, WordDictionaryType};
+use crate::{WordDictionary, DictionaryType};
 
 #[derive(Debug, Clone)]
 pub struct SentenceEntry {
@@ -33,9 +33,9 @@ impl SentenceDictionary {
           .into_iter()
           .map(|token| {
             word_dict
-              .get(&token.value, WordDictionaryType::Traditional)
+              .get(&token.value, DictionaryType::Traditional)
               .or_else(|| {
-                word_dict.get(&token.value, WordDictionaryType::Simplified)
+                word_dict.get(&token.value, DictionaryType::Simplified)
               })
               .and_then(|entries| entries.first())
               .map(|entry| {
@@ -61,7 +61,7 @@ impl SentenceDictionary {
   pub fn iter_sentences_including_word<'a>(
     &'a self,
     word: &'a str,
-    ty: WordDictionaryType,
+    ty: DictionaryType,
   ) -> impl Iterator<Item = (String, &'a str)> {
     self
       .data
@@ -69,8 +69,8 @@ impl SentenceDictionary {
       .filter(move |entry| {
         entry.tokens.iter().any(|(simplified, traditional)| {
           &**match ty {
-            WordDictionaryType::Simplified => simplified,
-            WordDictionaryType::Traditional => traditional,
+            DictionaryType::Simplified => simplified,
+            DictionaryType::Traditional => traditional,
           } == word
         })
       })
@@ -80,8 +80,8 @@ impl SentenceDictionary {
             .tokens
             .iter()
             .map(|(simplified, traditional)| match ty {
-              WordDictionaryType::Simplified => &**simplified,
-              WordDictionaryType::Traditional => &**traditional,
+              DictionaryType::Simplified => &**simplified,
+              DictionaryType::Traditional => &**traditional,
             })
             .collect::<String>(),
           &*entry.english,

@@ -143,6 +143,7 @@ export interface DictionaryPaneProps {
   meanings?: DictionaryMeaning[];
   sentences?: SentenceEntry[];
   homophones?: { value: string; highlight: boolean }[];
+  similar?: string[];
   characters?: DictionaryCharacterInfo[];
 }
 
@@ -190,6 +191,8 @@ export const DictionaryPane: React.FunctionComponent<DictionaryPaneProps> = (
           <SentencesList sentences={props.sentences} length={3} />
 
           <WordList title="Homophones" words={props.homophones} length={10} />
+
+          <WordList title="Similar" words={props.similar} />
         </div>
       )}
 
@@ -280,6 +283,8 @@ export const DictionaryPane: React.FunctionComponent<DictionaryPaneProps> = (
                     words={props.homophones}
                     length={10}
                   />
+
+                  <WordList title="Similar" words={props.similar} />
                 </>
               )}
 

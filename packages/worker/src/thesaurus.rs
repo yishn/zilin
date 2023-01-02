@@ -1,7 +1,7 @@
 use rustc_hash::{FxHashMap as HashMap, FxHashSet as HashSet};
 use std::cmp::Ordering;
 
-use crate::{WordDictionary, WordDictionaryType};
+use crate::{DictionaryType, WordDictionary};
 
 #[derive(Debug, Clone)]
 pub struct ThesaurusDictionary {
@@ -127,11 +127,11 @@ impl ThesaurusDictionary {
   pub fn get_similar_words(
     &self,
     word: &str,
-    ty: WordDictionaryType,
+    ty: DictionaryType,
   ) -> Vec<(&str, f32)> {
     let map = match ty {
-      WordDictionaryType::Simplified => &self.simplified,
-      WordDictionaryType::Traditional => &self.traditional,
+      DictionaryType::Simplified => &self.simplified,
+      DictionaryType::Traditional => &self.traditional,
     };
 
     map
@@ -150,8 +150,8 @@ impl ThesaurusDictionary {
           .filter(|&(_, score)| score.is_finite() && score > 0.0)
           .collect::<Vec<_>>();
 
-        result.sort_by(|(_, score1), (_, score2)| {
-          score2.partial_cmp(score1).unwrap_or(Ordering::Equal)
+        result.sort_by(|(_, x), (_, y)| {
+          y.partial_cmp(x).unwrap_or(Ordering::Equal)
         });
         result
       })
