@@ -142,7 +142,7 @@ export interface DictionaryPaneProps {
   variants?: string[];
   meanings?: DictionaryMeaning[];
   sentences?: SentenceEntry[];
-  homophones?: string[];
+  homophones?: { value: string; highlight: boolean }[];
   characters?: DictionaryCharacterInfo[];
 }
 

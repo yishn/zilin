@@ -68,6 +68,9 @@ extern "C" {
   #[wasm_bindgen(typescript_type = "WordEntry[]")]
   pub type JsWordEntryArray;
 
+  #[wasm_bindgen(typescript_type = "[entry: WordEntry, exact: boolean][]")]
+  pub type JsWordEntryExactArray;
+
   #[wasm_bindgen(typescript_type = "CharacterEntry")]
   pub type JsCharacterEntry;
 
@@ -314,7 +317,7 @@ impl Worker {
     &self,
     word: &str,
     simplified: bool,
-  ) -> JsWordEntryArray {
+  ) -> JsWordEntryExactArray {
     let character_dictionary = self.character_dict.get().await;
 
     let mut result = self
@@ -347,7 +350,9 @@ impl Worker {
     JsValue::from(
       result
         .into_iter()
-        .map(|(entry, _)| JsWordEntry::from(entry))
+        .map(|(entry, exact)| {
+          serde_wasm_bindgen::to_value(&(entry, exact)).unwrap_throw()
+        })
         .collect::<Array>(),
     )
     .into()

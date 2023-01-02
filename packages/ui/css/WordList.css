@@ -6,12 +6,12 @@
   margin-right: 0.5em;
 }
 
-.word-list a {
+.word-list > * {
   display: inline-block;
-  line-height: 1;
+  line-height: 1.2;
 }
 
-.word-list a:not(:last-child) {
+.word-list > *:not(:last-child) {
   margin-right: 0.5em;
 }
 

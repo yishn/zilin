@@ -37,6 +37,11 @@
   color: rgba(var(--light-link-text-color), 1);
 }
 
+.dictionary-pane em {
+  font-style: inherit;
+  font-weight: bold;
+}
+
 .dictionary-pane .word-info {
   flex: 1;
   padding: 2rem;

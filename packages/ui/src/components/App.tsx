@@ -79,8 +79,13 @@ export const App: React.FunctionalComponent = () => {
         highlight == null
           ? []
           : (await wasmWorker.getHomophones(highlight, mode === "simplified"))
-              .map((entry) => entry[mode])
-              .filter((value, i, arr) => i === 0 || value !== arr[i - 1]),
+              .map((entry) => ({
+                value: entry[0][mode],
+                highlight: entry[1],
+              }))
+              .filter(
+                (entry, i, arr) => i === 0 || entry.value !== arr[i - 1].value
+              ),
       variants: getVariants(highlight ?? "", dictionaryEntries[mode] ?? []),
     };
   }, [mode, highlight]);

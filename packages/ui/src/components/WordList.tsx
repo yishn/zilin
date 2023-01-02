@@ -1,12 +1,12 @@
 import * as React from "preact";
 import { useEffect, useState } from "preact/hooks";
-import { LinkifiedText } from "./LinkifiedText.tsx";
+import { DictionaryPopupLink } from "./DictionaryPopup.tsx";
 import { ModeValue } from "./ModeSwitcher.tsx";
 
 export interface WordListProps {
   title?: string;
   mode?: ModeValue;
-  words?: string[];
+  words?: (string | { value: string; highlight: boolean })[];
   length?: number;
 }
 
@@ -23,14 +23,17 @@ export const WordList: React.FunctionComponent<WordListProps> = (props) => {
   return (props.words?.length ?? 0) <= 0 ? null : (
     <div class="word-list">
       {props.title != null && <h3>{props.title}:</h3>}{" "}
-      <LinkifiedText
-        value={
-          props.words
-            ?.slice(0, length)
-            .map((word) => word)
-            .join(" ") ?? ""
-        }
-      />{" "}
+      {props.words?.slice(0, length).map((entry) =>
+        typeof entry === "string" ? (
+          <DictionaryPopupLink word={entry} />
+        ) : !entry.highlight ? (
+          <DictionaryPopupLink word={entry.value} />
+        ) : (
+          <em>
+            <DictionaryPopupLink word={entry.value} />
+          </em>
+        )
+      )}{" "}
       {length < (props.words?.length ?? 0) && (
         <a
           class="more"
