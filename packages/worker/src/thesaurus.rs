@@ -26,7 +26,7 @@ impl ThesaurusDictionary {
         .map(|first_char| !first_char.is_ascii_uppercase())
         .unwrap_or_default()
     }) {
-      let keywords = Self::extract_keywords(&entry.english);
+      let keywords = Self::extract_keywords(&entry.english, data);
 
       simplified
         .entry(entry.simplified.to_string())
@@ -44,24 +44,31 @@ impl ThesaurusDictionary {
     }
   }
 
-  fn extract_keywords(input: &str) -> HashSet<String> {
+  fn extract_keywords(
+    input: &str,
+    word_dict: &WordDictionary,
+  ) -> HashSet<String> {
     let meanings = input.split("/").filter(|meaning| {
       !meaning.contains("classifier for")
+        && !meaning.contains("variant of")
         && !meaning.contains("surname ")
         && !meaning.contains("CL:")
     });
 
     let keywords = meanings.flat_map(|meaning| {
-      if meaning.contains("variant of")
-        || meaning.contains("abbr. for")
+      if meaning.contains("abbr. for")
         || meaning.contains("also written")
         || meaning.contains("also called")
         || meaning.contains("also named")
         || meaning.contains("also pr.")
         || meaning.starts_with("see ")
       {
-        // TODO
-        HashSet::default()
+        word_dict
+          .tokenize(meaning)
+          .into_iter()
+          .filter(|token| token.has_entries)
+          .map(|token| token.value.to_string())
+          .collect()
       } else {
         let mut in_parentheses = false;
         let mut in_brackets = false;
@@ -133,7 +140,13 @@ impl ThesaurusDictionary {
         let mut result = map
           .iter()
           .filter(|&(w, _)| w != word)
-          .map(|(w, bag2)| (&**w, Self::calculate_similarity_score(bag1, bag2)))
+          .map(|(w, bag2)| {
+            if bag1.contains(w) {
+              (&**w, 1.0)
+            } else {
+              (&**w, Self::calculate_similarity_score(bag1, bag2))
+            }
+          })
           .filter(|&(_, score)| score.is_finite() && score > 0.0)
           .collect::<Vec<_>>();
 
