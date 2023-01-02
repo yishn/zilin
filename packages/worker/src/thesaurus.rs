@@ -1,6 +1,7 @@
 use rustc_hash::{FxHashMap as HashMap, FxHashSet as HashSet};
+use std::cmp::Ordering;
 
-use crate::WordDictionary;
+use crate::{WordDictionary, WordDictionaryType};
 
 #[derive(Debug, Clone)]
 pub struct ThesaurusDictionary {
@@ -27,8 +28,14 @@ impl ThesaurusDictionary {
     }) {
       let keywords = Self::extract_keywords(&entry.english);
 
-      simplified.insert(entry.simplified.to_string(), keywords.clone());
-      traditional.insert(entry.traditional.to_string(), keywords);
+      simplified
+        .entry(entry.simplified.to_string())
+        .or_insert(HashSet::default())
+        .extend(keywords.clone().into_iter());
+      traditional
+        .entry(entry.traditional.to_string())
+        .or_insert(HashSet::default())
+        .extend(keywords.into_iter());
     }
 
     Self {
@@ -53,6 +60,7 @@ impl ThesaurusDictionary {
         || meaning.contains("also pr.")
         || meaning.starts_with("see ")
       {
+        // TODO
         HashSet::default()
       } else {
         let mut in_parentheses = false;
@@ -67,13 +75,20 @@ impl ThesaurusDictionary {
           )
           .split_ascii_whitespace()
           .filter(|&word| {
-            word.len() >= 3 && word != "the" && word != "are" && word != "sth"
+            word.len() >= 3
+              && word != "the"
+              && word != "are"
+              && word != "sth"
+              && word != "very"
           })
-          // Remove words in parentheses and brackets
-          .filter(|&word| !word.starts_with("(") || !word.ends_with(")"))
-          .filter(|&word| !word.starts_with("[") || !word.ends_with("]"))
           .filter_map(|word| {
-            if word.starts_with("(") {
+            // Remove words in parentheses and brackets
+
+            if word.starts_with("(") && word.ends_with(")")
+              || word.starts_with("[") && word.ends_with("]")
+            {
+              return None;
+            } else if word.starts_with("(") {
               in_parentheses = true;
             } else if word.starts_with("[") {
               in_brackets = true
@@ -93,6 +108,41 @@ impl ThesaurusDictionary {
     });
 
     keywords.collect()
+  }
+
+  fn calculate_similarity_score(
+    bag1: &HashSet<String>,
+    bag2: &HashSet<String>,
+  ) -> f32 {
+    bag1.intersection(bag2).count() as f32 / bag1.union(bag2).count() as f32
+  }
+
+  pub fn get_similar_words(
+    &self,
+    word: &str,
+    ty: WordDictionaryType,
+  ) -> Vec<(&str, f32)> {
+    let map = match ty {
+      WordDictionaryType::Simplified => &self.simplified,
+      WordDictionaryType::Traditional => &self.traditional,
+    };
+
+    map
+      .get(word)
+      .map(|bag1| {
+        let mut result = map
+          .iter()
+          .filter(|&(w, _)| w != word)
+          .map(|(w, bag2)| (&**w, Self::calculate_similarity_score(bag1, bag2)))
+          .filter(|&(_, score)| score.is_finite() && score > 0.0)
+          .collect::<Vec<_>>();
+
+        result.sort_by(|(_, score1), (_, score2)| {
+          score2.partial_cmp(score1).unwrap_or(Ordering::Equal)
+        });
+        result
+      })
+      .unwrap_or_default()
   }
 }
 
@@ -114,8 +164,6 @@ mod tests {
 
   #[test]
   fn should_be_able_to_parse_thesaurus_data() {
-    let dict = &*THESAURUS_DICT;
-
-    println!("{:?}", dict.simplified.iter().take(100).collect::<Vec<_>>());
+    let _ = &*THESAURUS_DICT;
   }
 }
