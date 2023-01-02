@@ -38,6 +38,8 @@ jobs:
         uses: jetli/wasm-pack-action@v0.4.0
       - name: Setup Pages
         uses: actions/configure-pages@v2
+      - name: Download latest data
+        run: deno task update-data || true
       - name: Build
         run: deno task build
       - name: Upload artifact
