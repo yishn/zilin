@@ -1,7 +1,7 @@
 use rustc_hash::FxHashMap as HashMap;
 use std::sync::Arc;
 
-use crate::{WordDictionary, DictionaryType};
+use crate::{DictionaryType, WordDictionary};
 
 #[derive(Debug, Clone)]
 pub struct SentenceEntry {
@@ -58,11 +58,11 @@ impl SentenceDictionary {
     Self { data: map }
   }
 
-  pub fn iter_sentences_including_word<'a>(
+  pub fn iter_sentences_including_word<'a: 'b, 'b>(
     &'a self,
-    word: &'a str,
+    word: &'b str,
     ty: DictionaryType,
-  ) -> impl Iterator<Item = (String, &'a str)> {
+  ) -> impl Iterator<Item = (String, &'a str)> + 'b {
     self
       .data
       .values()
