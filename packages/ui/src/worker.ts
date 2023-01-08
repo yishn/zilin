@@ -4,9 +4,10 @@ import type {
   Worker as WasmWorker,
 } from "../../worker/src/main.ts";
 
-export * from "../../worker/pkg/zilin_worker.d.ts"
+export * from "../../worker/pkg/zilin_worker.d.ts";
 
 type Promisified<T> = {
+  // deno-lint-ignore no-explicit-any
   [K in keyof T]: T[K] extends (...args: any) => any
     ? (...args: Parameters<T[K]>) => Promise<Awaited<ReturnType<T[K]>>>
     : never;
@@ -51,6 +52,6 @@ export function getWasmWorker(): Promisified<WasmWorker> {
             worker.postMessage(msg);
           });
       },
-    }
+    },
   ) as Promisified<WasmWorker>);
 }

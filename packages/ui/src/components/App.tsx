@@ -90,7 +90,72 @@ export const App: React.FunctionalComponent = () => {
     };
   }, [mode, highlight]);
 
+  const characters = useAsync(async () => {
+    return await Promise.all(
+      [
+        ...((wordInfo.continuousValue?.dictionaryEntries[mode].length ?? 0) >
+          0 && highlight != null
+          ? highlight
+          : ""),
+      ].map<Promise<DictionaryCharacterInfo>>(async (character) => {
+        const entries = await lookup(character, mode);
+        const characterInfo = await wasmWorker.getCharacter(character);
+
+        return {
+          character,
+          variants: getVariants(character, entries ?? []),
+
+          meanings:
+            entries?.map((entry) => ({
+              pinyin: prettifyPinyin(entry.pinyin),
+              explanation: prettifyExplanation(entry.english),
+            })) ?? [],
+
+          decomposition: await wasmWorker.decompose(character),
+
+          etymology:
+            characterInfo?.etymology?.type !== "pictophonetic"
+              ? characterInfo?.etymology?.hint
+              : characterInfo.etymology.semantic == null &&
+                characterInfo.etymology.phonetic == null
+              ? undefined
+              : [
+                  characterInfo.etymology.semantic == null
+                    ? null
+                    : `${characterInfo.etymology.semantic} provides the meaning`,
+                  characterInfo.etymology.phonetic == null
+                    ? null
+                    : `${characterInfo.etymology.phonetic} provides the pronunciation`,
+                ]
+                  .filter((line) => line != null)
+                  .join(", while ") + ".",
+
+          componentOf: (
+            await wasmWorker.getCharactersIncludingComponent(
+              character,
+              mode === "simplified"
+            )
+          )
+            .map((entry) => entry.character)
+            .filter((word, i, arr) => i === 0 || word !== arr[i - 1]),
+
+          characterOf: (
+            await wasmWorker.getWordsIncludingSubslice(
+              character,
+              200,
+              mode === "simplified"
+            )
+          )
+            .map((entry) => entry[mode])
+            .filter((word, i, arr) => i === 0 || word !== arr[i - 1]),
+        };
+      })
+    );
+  }, [mode, highlight, wordInfo.continuousValue]);
+
   const sentences = useAsync(async () => {
+    await characters.promise;
+
     return highlight == null
       ? []
       : await wasmWorker.getSentencesIncludingWord(
@@ -101,77 +166,14 @@ export const App: React.FunctionalComponent = () => {
   }, [mode, highlight]);
 
   const similar = useAsync(async () => {
+    await characters.promise;
+
     return highlight == null
       ? []
       : (
           await wasmWorker.getSimilarWords(highlight, 10, mode === "simplified")
         ).map((entry) => entry[0]);
   }, [highlight, mode]);
-
-  const characters = useAsync(
-    async () =>
-      await Promise.all(
-        [
-          ...((wordInfo.continuousValue?.dictionaryEntries[mode].length ?? 0) >
-            0 && highlight != null
-            ? highlight
-            : ""),
-        ].map<Promise<DictionaryCharacterInfo>>(async (character) => {
-          const entries = await lookup(character, mode);
-          const characterInfo = await wasmWorker.getCharacter(character);
-
-          return {
-            character,
-            variants: getVariants(character, entries ?? []),
-
-            meanings:
-              entries?.map((entry) => ({
-                pinyin: prettifyPinyin(entry.pinyin),
-                explanation: prettifyExplanation(entry.english),
-              })) ?? [],
-
-            decomposition: await wasmWorker.decompose(character),
-
-            etymology:
-              characterInfo?.etymology?.type !== "pictophonetic"
-                ? characterInfo?.etymology?.hint
-                : characterInfo.etymology.semantic == null &&
-                  characterInfo.etymology.phonetic == null
-                ? undefined
-                : [
-                    characterInfo.etymology.semantic == null
-                      ? null
-                      : `${characterInfo.etymology.semantic} provides the meaning`,
-                    characterInfo.etymology.phonetic == null
-                      ? null
-                      : `${characterInfo.etymology.phonetic} provides the pronunciation`,
-                  ]
-                    .filter((line) => line != null)
-                    .join(", while ") + ".",
-
-            componentOf: (
-              await wasmWorker.getCharactersIncludingComponent(
-                character,
-                mode === "simplified"
-              )
-            )
-              .map((entry) => entry.character)
-              .filter((word, i, arr) => i === 0 || word !== arr[i - 1]),
-
-            characterOf: (
-              await wasmWorker.getWordsIncludingSubslice(
-                character,
-                200,
-                mode === "simplified"
-              )
-            )
-              .map((entry) => entry[mode])
-              .filter((word, i, arr) => i === 0 || word !== arr[i - 1]),
-          };
-        })
-      ),
-    [mode, highlight, wordInfo.continuousValue]
-  );
 
   useEffect(
     function updateTitle() {
