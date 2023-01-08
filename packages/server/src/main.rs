@@ -3,19 +3,21 @@ mod get_word_route;
 use axum::{routing::get, Router, Server};
 use get_word_route::*;
 use once_cell::sync::Lazy;
+use std::fs;
 use zilin_worker::{SentenceDictionary, ThesaurusDictionary, WordDictionary};
 
 pub static WORD_DICT: Lazy<WordDictionary> = Lazy::new(|| {
-  WordDictionary::new(include_str!(
-    "../../../data/cedict_1_0_ts_utf-8_mdbg.txt"
-  ))
+  let data = fs::read_to_string("./data/cedict_1_0_ts_utf-8_mdbg.txt")
+    .expect("word dict data not found");
+
+  WordDictionary::new(&data)
 });
 
 pub static SENTENCE_DICT: Lazy<SentenceDictionary> = Lazy::new(|| {
-  SentenceDictionary::new(
-    include_str!("../../../data/sentences.txt"),
-    &WORD_DICT,
-  )
+  let data = fs::read_to_string("./data/sentences.txt")
+    .expect("sentence dict data not found");
+
+  SentenceDictionary::new(&data, &WORD_DICT)
 });
 
 pub static THESAURUS_DICT: Lazy<ThesaurusDictionary> =
