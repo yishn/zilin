@@ -323,7 +323,7 @@ mod tests {
   fn can_get_multiple_word_entries() {
     let data = CEDICT_DATA.get("沈", DictionaryType::Simplified).unwrap();
 
-    assert_eq!(data.len(), 2);
+    assert_eq!(data.len(), 4);
   }
 
   #[test]
