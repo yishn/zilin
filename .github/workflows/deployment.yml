@@ -34,7 +34,7 @@ jobs:
         with:
           ref: rel
       - name: Setup Deno
-        uses: denoland/setup-deno@v1.1.1
+        uses: denoland/setup-deno@v2
         with:
           deno-version: 1.x
       - name: Setup wasm-pack
@@ -46,10 +46,10 @@ jobs:
       - name: Build
         run: deno task build
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v1
+        uses: actions/upload-pages-artifact@v3
         with:
           # Upload entire repository
           path: "."
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v1
+        uses: actions/deploy-pages@v4
